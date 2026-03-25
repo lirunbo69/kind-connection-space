@@ -1,16 +1,17 @@
 import { PenLine, Layers, BarChart3, Key, Sparkles, Coins, User } from "lucide-react";
+import { NavLink } from "@/components/NavLink";
 
 const navItems = [
-  { icon: PenLine, label: "Listing生成工作台", active: true },
-  { icon: Layers, label: "批量生成" },
-  { icon: BarChart3, label: "竞品分析" },
-  { icon: Key, label: "关键词工具" },
-  { icon: Sparkles, label: "自由创作" },
+  { icon: PenLine, label: "Listing生成工作台", path: "/" },
+  { icon: Layers, label: "批量生成", path: "/batch" },
+  { icon: BarChart3, label: "竞品分析", path: "/analysis" },
+  { icon: Key, label: "关键词工具", path: "/keywords" },
+  { icon: Sparkles, label: "自由创作", path: "/create" },
 ];
 
 const bottomItems = [
-  { icon: Coins, label: "充值中心" },
-  { icon: User, label: "个人中心" },
+  { icon: Coins, label: "充值中心", path: "/topup" },
+  { icon: User, label: "个人中心", path: "/profile" },
 ];
 
 const AppSidebar = () => {
@@ -30,30 +31,31 @@ const AppSidebar = () => {
       {/* Nav */}
       <nav className="flex-1 px-3 mt-2 space-y-0.5">
         {navItems.map((item) => (
-          <button
+          <NavLink
             key={item.label}
-            className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm transition-colors ${
-              item.active
-                ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                : "text-sidebar-foreground hover:bg-sidebar-accent/60"
-            }`}
+            to={item.path}
+            end
+            className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-sidebar-foreground hover:bg-sidebar-accent/60 transition-colors"
+            activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
           >
             <item.icon className="w-4 h-4" />
             {item.label}
-          </button>
+          </NavLink>
         ))}
       </nav>
 
       {/* Bottom */}
       <div className="px-3 pb-3 space-y-0.5">
         {bottomItems.map((item) => (
-          <button
+          <NavLink
             key={item.label}
-            className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-sidebar-foreground hover:bg-sidebar-accent/60 transition-colors"
+            to={item.path}
+            className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-sidebar-foreground hover:bg-sidebar-accent/60 transition-colors"
+            activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
           >
             <item.icon className="w-4 h-4" />
             {item.label}
-          </button>
+          </NavLink>
         ))}
         <div className="flex items-center gap-2 px-3 py-3 mt-2 border-t border-sidebar-border">
           <User className="w-4 h-4 text-muted-foreground" />
