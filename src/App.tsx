@@ -23,6 +23,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/batch" element={<BatchPage />} />
+              <Route path="/analysis" element={<CompetitorPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </main>
