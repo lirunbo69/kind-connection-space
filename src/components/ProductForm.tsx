@@ -35,9 +35,24 @@ const ProductForm = ({ onGenerate }: { onGenerate: () => void }) => {
             <label className="block text-sm font-medium mb-1.5">目标市场</label>
             <select className="w-full h-10 px-3 rounded-lg border bg-muted/50 text-sm text-foreground">
               <option value="">请选择市场</option>
-              <option>墨西哥</option>
-              <option>巴西</option>
-              <option>阿根廷</option>
+              <option value="MX">墨西哥</option>
+              <option value="BR">巴西</option>
+              <option value="CO">哥伦比亚</option>
+              <option value="CL">智利</option>
+              <option value="AR">阿根廷</option>
+              <option value="UY">乌拉圭</option>
+              <option value="PE">秘鲁</option>
+              <option value="EC">厄瓜多尔</option>
+              <option value="VE">委内瑞拉</option>
+              <option value="CR">哥斯达黎加</option>
+              <option value="DO">多米尼加</option>
+              <option value="HN">洪都拉斯</option>
+              <option value="GT">危地马拉</option>
+              <option value="NI">尼加拉瓜</option>
+              <option value="PA">巴拿马</option>
+              <option value="BO">玻利维亚</option>
+              <option value="PY">巴拉圭</option>
+              <option value="SV">萨尔瓦多</option>
             </select>
           </div>
           <div>
