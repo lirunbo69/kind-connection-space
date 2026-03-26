@@ -44,8 +44,24 @@ const ProductForm = ({ onGenerate }: { onGenerate: () => void }) => {
             <label className="block text-sm font-medium mb-1.5">生成语言</label>
             <select className="w-full h-10 px-3 rounded-lg border bg-muted/50 text-sm text-foreground">
               <option value="">请选择语言</option>
-              <option>西班牙语</option>
-              <option>葡萄牙语</option>
+              <option value="es-MX">西班牙语（墨西哥）</option>
+              <option value="pt-BR">葡萄牙语（巴西）</option>
+              <option value="es-CO">西班牙语（哥伦比亚）</option>
+              <option value="es-CL">西班牙语（智利）</option>
+              <option value="es-AR">西班牙语（阿根廷）</option>
+              <option value="es-UY">西班牙语（乌拉圭）</option>
+              <option value="es-PE">西班牙语（秘鲁）</option>
+              <option value="es-EC">西班牙语（厄瓜多尔）</option>
+              <option value="es-VE">西班牙语（委内瑞拉）</option>
+              <option value="es-CR">西班牙语（哥斯达黎加）</option>
+              <option value="es-DO">西班牙语（多米尼加）</option>
+              <option value="es-HN">西班牙语（洪都拉斯）</option>
+              <option value="es-GT">西班牙语（危地马拉）</option>
+              <option value="es-NI">西班牙语（尼加拉瓜）</option>
+              <option value="es-PA">西班牙语（巴拿马）</option>
+              <option value="es-BO">西班牙语（玻利维亚）</option>
+              <option value="es-PY">西班牙语（巴拉圭）</option>
+              <option value="es-SV">西班牙语（萨尔瓦多）</option>
             </select>
           </div>
         </div>
