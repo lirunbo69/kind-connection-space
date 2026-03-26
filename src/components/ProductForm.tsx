@@ -1,9 +1,43 @@
-import { FileText, Upload, Info } from "lucide-react";
+import { useState } from "react";
+import { FileText, Upload, Info, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 
-const ProductForm = ({ onGenerate }: { onGenerate: () => void }) => {
+export interface ProductFormData {
+  productName: string;
+  productDescription: string;
+  keywords: string;
+  market: string;
+  language: string;
+  titleLimit: string;
+  imageCount: string;
+}
+
+interface ProductFormProps {
+  onGenerate: (data: ProductFormData) => void;
+  isLoading?: boolean;
+}
+
+const ProductForm = ({ onGenerate, isLoading }: ProductFormProps) => {
+  const [formData, setFormData] = useState<ProductFormData>({
+    productName: "",
+    productDescription: "",
+    keywords: "",
+    market: "",
+    language: "",
+    titleLimit: "",
+    imageCount: "",
+  });
+
+  const updateField = (field: keyof ProductFormData, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmit = () => {
+    onGenerate(formData);
+  };
+
   return (
     <div className="bg-card rounded-2xl border p-6 shadow-sm">
       <div className="flex items-center gap-2.5 mb-6">
@@ -14,7 +48,12 @@ const ProductForm = ({ onGenerate }: { onGenerate: () => void }) => {
       <div className="space-y-5">
         <div>
           <label className="block text-sm font-medium mb-1.5">产品名称</label>
-          <Input placeholder="例如：无线蓝牙耳机 TWS" className="bg-muted/50" />
+          <Input
+            placeholder="例如：无线蓝牙耳机 TWS"
+            className="bg-muted/50"
+            value={formData.productName}
+            onChange={(e) => updateField("productName", e.target.value)}
+          />
         </div>
 
         <div>
@@ -22,18 +61,29 @@ const ProductForm = ({ onGenerate }: { onGenerate: () => void }) => {
           <Textarea
             placeholder="描述产品的核心功能、材质、规格等信息..."
             className="bg-muted/50 min-h-[100px] resize-none"
+            value={formData.productDescription}
+            onChange={(e) => updateField("productDescription", e.target.value)}
           />
         </div>
 
         <div>
           <label className="block text-sm font-medium mb-1.5">关键词</label>
-          <Input placeholder="例如：auriculares bluetooth, inalámbricos" className="bg-muted/50" />
+          <Input
+            placeholder="例如：auriculares bluetooth, inalámbricos"
+            className="bg-muted/50"
+            value={formData.keywords}
+            onChange={(e) => updateField("keywords", e.target.value)}
+          />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium mb-1.5">目标市场</label>
-            <select className="w-full h-10 px-3 rounded-lg border bg-muted/50 text-sm text-foreground">
+            <select
+              className="w-full h-10 px-3 rounded-lg border bg-muted/50 text-sm text-foreground"
+              value={formData.market}
+              onChange={(e) => updateField("market", e.target.value)}
+            >
               <option value="">请选择市场</option>
               <option value="MX">墨西哥</option>
               <option value="BR">巴西</option>
@@ -57,7 +107,11 @@ const ProductForm = ({ onGenerate }: { onGenerate: () => void }) => {
           </div>
           <div>
             <label className="block text-sm font-medium mb-1.5">生成语言</label>
-            <select className="w-full h-10 px-3 rounded-lg border bg-muted/50 text-sm text-foreground">
+            <select
+              className="w-full h-10 px-3 rounded-lg border bg-muted/50 text-sm text-foreground"
+              value={formData.language}
+              onChange={(e) => updateField("language", e.target.value)}
+            >
               <option value="">请选择语言</option>
               <option value="es-MX">西班牙语（墨西哥）</option>
               <option value="pt-BR">葡萄牙语（巴西）</option>
@@ -84,11 +138,23 @@ const ProductForm = ({ onGenerate }: { onGenerate: () => void }) => {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium mb-1.5">标题字数限制</label>
-            <Input placeholder="例如：60" type="number" className="bg-muted/50" />
+            <Input
+              placeholder="例如：60"
+              type="number"
+              className="bg-muted/50"
+              value={formData.titleLimit}
+              onChange={(e) => updateField("titleLimit", e.target.value)}
+            />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1.5">图片生成数量</label>
-            <Input placeholder="例如：3" type="number" className="bg-muted/50" />
+            <Input
+              placeholder="例如：3"
+              type="number"
+              className="bg-muted/50"
+              value={formData.imageCount}
+              onChange={(e) => updateField("imageCount", e.target.value)}
+            />
           </div>
         </div>
 
@@ -106,10 +172,18 @@ const ProductForm = ({ onGenerate }: { onGenerate: () => void }) => {
         </div>
 
         <Button
-          onClick={onGenerate}
+          onClick={handleSubmit}
+          disabled={isLoading || !formData.productName || !formData.productDescription}
           className="w-full h-12 text-base font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl shadow-md"
         >
-          ✨ 开始生成 Listing
+          {isLoading ? (
+            <>
+              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+              AI 生成中...
+            </>
+          ) : (
+            "✨ 开始生成 Listing"
+          )}
         </Button>
       </div>
     </div>
