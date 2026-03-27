@@ -58,12 +58,17 @@ const App = () => {
     );
   }
 
+  // Check if on reset-password route
+  const isResetPassword = window.location.pathname === "/reset-password";
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        {session ? (
+        {isResetPassword ? (
+          <ResetPasswordPage />
+        ) : session ? (
           <BrowserRouter>
             <SidebarProvider>
               <AppLayout />
