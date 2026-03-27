@@ -10,8 +10,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Users, Bot, FileText, Plus, Edit2, Trash2, Coins, BarChart3 } from "lucide-react";
+import { Users, Bot, FileText, Edit2, Trash2, Coins, BarChart3, LayoutDashboard, ShoppingCart, UserCheck, Cpu, Shield } from "lucide-react";
 import AnalyticsPanel from "@/components/admin/AnalyticsPanel";
+import DashboardOverview from "@/components/admin/DashboardOverview";
+import SalesReportPanel from "@/components/admin/SalesReportPanel";
+import OrderManagementPanel from "@/components/admin/OrderManagementPanel";
+import UserAnalyticsPanel from "@/components/admin/UserAnalyticsPanel";
+import AICostPanel from "@/components/admin/AICostPanel";
+import SystemMonitorPanel from "@/components/admin/SystemMonitorPanel";
 
 type UserRow = {
   id: string;
