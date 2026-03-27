@@ -10,7 +10,7 @@ import { Mail, Phone, ArrowLeft, BarChart3, TrendingUp, Globe, Zap, Layers, PenL
 
 type AuthView = "main" | "forgot-password";
 
-const AuthPage = ({ onAuth }: { onAuth: () => void }) => {
+const AuthPage = ({ onAuth, defaultTab = "login", onBack }: { onAuth: () => void; defaultTab?: string; onBack?: () => void }) => {
   const [view, setView] = useState<AuthView>("main");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
