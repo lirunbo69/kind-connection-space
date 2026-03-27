@@ -183,10 +183,34 @@ const ProductForm = ({ onGenerate, isLoading }: ProductFormProps) => {
 
         <div>
           <label className="block text-sm font-medium mb-1.5">参考图上传（可选）</label>
-          <div className="border-2 border-dashed rounded-xl p-6 flex flex-col items-center gap-2 text-muted-foreground hover:border-primary/40 transition-colors cursor-pointer">
-            <Upload className="w-6 h-6" />
-            <span className="text-sm">Click to upload an image</span>
-          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleImageUpload}
+          />
+          {uploadedImage ? (
+            <div className="relative border-2 border-primary/30 rounded-xl p-2 flex items-center gap-3 bg-muted/30">
+              <img src={uploadedImage} alt="预览" className="w-16 h-16 object-cover rounded-lg" />
+              <span className="text-sm truncate flex-1">{uploadedFileName}</span>
+              <button
+                type="button"
+                onClick={removeImage}
+                className="p-1 rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              className="border-2 border-dashed rounded-xl p-6 flex flex-col items-center gap-2 text-muted-foreground hover:border-primary/40 transition-colors cursor-pointer"
+            >
+              <Upload className="w-6 h-6" />
+              <span className="text-sm">点击上传参考图片（最大 5MB）</span>
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-2 bg-accent/60 rounded-lg px-4 py-3">
