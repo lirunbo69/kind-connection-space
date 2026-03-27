@@ -24,11 +24,11 @@ export function usePageTracker(pagePath: string) {
       const deviceType = getDeviceType();
       const today = new Date().toISOString().split("T")[0];
 
-      // Check if already tracked today for this page
+      // Check if already tracked this session for this page today
       const key = `pv_${pagePath}_${today}`;
       if (sessionStorage.getItem(key)) return;
 
-      await supabase.from("page_views").insert({
+      await (supabase.from("page_views" as any) as any).insert({
         visitor_id: visitorId,
         page_path: pagePath,
         device_type: deviceType,

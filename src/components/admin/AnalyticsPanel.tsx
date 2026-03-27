@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Eye, Monitor, Smartphone, TrendingUp, Users } from "lucide-react";
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
@@ -44,18 +44,14 @@ const AnalyticsPanel = () => {
     startDate.setDate(startDate.getDate() - days);
     const startStr = startDate.toISOString().split("T")[0];
 
-    // Fetch raw page views for the range
-    const { data: views } = await supabase
-      .from("page_views")
+    const { data: views } = await (supabase.from("page_views" as any) as any)
       .select("*")
       .gte("visit_date", startStr)
       .order("created_at", { ascending: false });
 
     if (views) {
-      // Group by date
       const dateMap = new Map<string, { visitors: Set<string>; total: number; desktop: number; mobile: number }>();
 
-      // Initialize all dates in range
       for (let i = 0; i < days; i++) {
         const d = new Date();
         d.setDate(d.getDate() - i);
@@ -63,7 +59,7 @@ const AnalyticsPanel = () => {
         dateMap.set(key, { visitors: new Set(), total: 0, desktop: 0, mobile: 0 });
       }
 
-      views.forEach((v: any) => {
+      (views as any[]).forEach((v) => {
         const day = v.visit_date;
         if (!dateMap.has(day)) {
           dateMap.set(day, { visitors: new Set(), total: 0, desktop: 0, mobile: 0 });
@@ -77,7 +73,7 @@ const AnalyticsPanel = () => {
 
       const dayStats: DayStat[] = Array.from(dateMap.entries())
         .map(([date, d]) => ({
-          date: date.slice(5), // MM-DD
+          date: date.slice(5),
           total: d.total,
           unique: d.visitors.size,
           desktop: d.desktop,
@@ -86,12 +82,11 @@ const AnalyticsPanel = () => {
         .sort((a, b) => a.date.localeCompare(b.date));
 
       setStats(dayStats);
-      setRecentViews(views.slice(0, 50) as RecentView[]);
+      setRecentViews((views as any[]).slice(0, 50) as RecentView[]);
     }
     setLoading(false);
   };
 
-  // Summary calculations
   const today = new Date().toISOString().split("T")[0].slice(5);
   const yesterday = (() => {
     const d = new Date();
