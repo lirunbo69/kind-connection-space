@@ -1,6 +1,6 @@
 import { PenLine, Layers, BarChart3, Key, Sparkles, Coins, User, Zap, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
-import { useState } from "react";
+import { useSidebarCollapsed } from "@/components/SidebarContext";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const navItems = [
