@@ -39,19 +39,31 @@ const AuthPage = ({ onAuth, defaultTab = "login", onBack }: { onAuth: () => void
   const handleEmailSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin } });
+    const { data, error } = await supabase.auth.signUp({ email, password });
     setLoading(false);
-    if (error) toast({ title: "注册失败", description: error.message, variant: "destructive" });
-    else toast({ title: "注册成功", description: "请检查邮箱完成验证后登录。" });
+    if (error) {
+      toast({ title: "注册失败", description: error.message, variant: "destructive" });
+    } else if (data.session) {
+      toast({ title: "注册成功", description: "欢迎使用！" });
+      onAuth();
+    } else {
+      toast({ title: "注册成功", description: "请检查邮箱完成验证后登录。" });
+    }
   };
 
   const handlePhoneSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.signUp({ phone, password });
+    const { data, error } = await supabase.auth.signUp({ phone, password });
     setLoading(false);
-    if (error) toast({ title: "注册失败", description: error.message, variant: "destructive" });
-    else toast({ title: "注册成功", description: "手机号注册成功，请登录。" });
+    if (error) {
+      toast({ title: "注册失败", description: error.message, variant: "destructive" });
+    } else if (data.session) {
+      toast({ title: "注册成功", description: "欢迎使用！" });
+      onAuth();
+    } else {
+      toast({ title: "注册成功", description: "手机号注册成功，请登录。" });
+    }
   };
 
   const handleForgotPassword = async (e: React.FormEvent) => {
