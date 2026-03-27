@@ -19,11 +19,9 @@ const AppSidebar = () => {
     <aside className="fixed left-0 top-0 bottom-0 w-52 bg-sidebar flex flex-col border-r border-sidebar-border z-20">
       {/* Logo */}
       <div className="flex items-center gap-2.5 px-5 py-5">
-        <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center">
-          <Sparkles className="w-5 h-5 text-primary-foreground" />
-        </div>
+        <img src="/logo.png" alt="秒通" className="w-9 h-9 rounded-xl" width={36} height={36} />
         <div>
-          <div className="font-semibold text-sm text-sidebar-accent-foreground">李润博测试ERP</div>
+          <div className="font-semibold text-sm text-sidebar-accent-foreground">秒通</div>
           <div className="text-xs text-muted-foreground">ListingAI</div>
         </div>
       </div>
