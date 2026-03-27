@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { FileText, Upload, Info, Loader2 } from "lucide-react";
+import { useState, useRef } from "react";
+import { FileText, Upload, Info, Loader2, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
