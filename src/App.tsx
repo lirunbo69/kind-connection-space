@@ -16,6 +16,7 @@ import CompetitorPage from "./pages/CompetitorPage.tsx";
 import ProfilePage from "./pages/ProfilePage.tsx";
 import ChatPage from "./pages/ChatPage.tsx";
 import AdminPage from "./pages/AdminPage.tsx";
+import TopupPage from "./pages/TopupPage.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
