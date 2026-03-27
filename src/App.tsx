@@ -24,6 +24,8 @@ const queryClient = new QueryClient();
 
 const AppLayout = () => {
   const { collapsed } = useSidebarCollapsed();
+  const location = useLocation();
+  usePageTracker(location.pathname);
   return (
     <div className="min-h-screen flex">
       <AppSidebar />
