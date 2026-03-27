@@ -17,8 +17,7 @@ const bottomItems = [
 ];
 
 const AppSidebar = () => {
-  const [collapsed, setCollapsed] = useState(false);
-  const w = collapsed ? "w-16" : "w-52";
+  const { collapsed, setCollapsed } = useSidebarCollapsed();
 
   const NavItem = ({ icon: Icon, label, path, end }: { icon: any; label: string; path: string; end?: boolean }) => {
     const link = (

@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import AppSidebar from "@/components/AppSidebar";
+import { SidebarProvider, useSidebarCollapsed } from "@/components/SidebarContext";
 import Index from "./pages/Index.tsx";
 import BatchPage from "./pages/BatchPage.tsx";
 import CompetitorPage from "./pages/CompetitorPage.tsx";
