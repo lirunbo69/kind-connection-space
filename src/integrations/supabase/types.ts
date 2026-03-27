@@ -134,6 +134,33 @@ export type Database = {
         }
         Relationships: []
       }
+      recharge_records: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          points: number
+          status: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          points: number
+          status?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          points?: number
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_points: {
         Row: {
           id: string
