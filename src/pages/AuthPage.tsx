@@ -12,6 +12,7 @@ type AuthView = "main" | "forgot-password";
 
 const AuthPage = ({ onAuth, defaultTab = "login", onBack }: { onAuth: () => void; defaultTab?: string; onBack?: () => void }) => {
   const [view, setView] = useState<AuthView>("main");
+  const [activeTab, setActiveTab] = useState(defaultTab);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [phone, setPhone] = useState("");
