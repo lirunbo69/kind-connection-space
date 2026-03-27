@@ -53,8 +53,22 @@ const ProductForm = ({ onGenerate, isLoading }: ProductFormProps) => {
     imageCount: "",
   });
 
+  const marketToLanguage: Record<string, string> = {
+    MX: "es-MX",
+    BR: "pt-BR",
+    CL: "es-CL",
+    CO: "es-CO",
+    AR: "es-AR",
+    UY: "es-UY",
+  };
+
   const updateField = (field: keyof ProductFormData, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    if (field === "market") {
+      const lang = marketToLanguage[value] || "";
+      setFormData((prev) => ({ ...prev, market: value, language: lang }));
+    } else {
+      setFormData((prev) => ({ ...prev, [field]: value }));
+    }
   };
 
   const handleSubmit = () => {
@@ -110,22 +124,10 @@ const ProductForm = ({ onGenerate, isLoading }: ProductFormProps) => {
               <option value="">请选择市场</option>
               <option value="MX">墨西哥</option>
               <option value="BR">巴西</option>
-              <option value="CO">哥伦比亚</option>
               <option value="CL">智利</option>
+              <option value="CO">哥伦比亚</option>
               <option value="AR">阿根廷</option>
               <option value="UY">乌拉圭</option>
-              <option value="PE">秘鲁</option>
-              <option value="EC">厄瓜多尔</option>
-              <option value="VE">委内瑞拉</option>
-              <option value="CR">哥斯达黎加</option>
-              <option value="DO">多米尼加</option>
-              <option value="HN">洪都拉斯</option>
-              <option value="GT">危地马拉</option>
-              <option value="NI">尼加拉瓜</option>
-              <option value="PA">巴拿马</option>
-              <option value="BO">玻利维亚</option>
-              <option value="PY">巴拉圭</option>
-              <option value="SV">萨尔瓦多</option>
             </select>
           </div>
           <div>
@@ -138,22 +140,10 @@ const ProductForm = ({ onGenerate, isLoading }: ProductFormProps) => {
               <option value="">请选择语言</option>
               <option value="es-MX">西班牙语（墨西哥）</option>
               <option value="pt-BR">葡萄牙语（巴西）</option>
-              <option value="es-CO">西班牙语（哥伦比亚）</option>
               <option value="es-CL">西班牙语（智利）</option>
+              <option value="es-CO">西班牙语（哥伦比亚）</option>
               <option value="es-AR">西班牙语（阿根廷）</option>
               <option value="es-UY">西班牙语（乌拉圭）</option>
-              <option value="es-PE">西班牙语（秘鲁）</option>
-              <option value="es-EC">西班牙语（厄瓜多尔）</option>
-              <option value="es-VE">西班牙语（委内瑞拉）</option>
-              <option value="es-CR">西班牙语（哥斯达黎加）</option>
-              <option value="es-DO">西班牙语（多米尼加）</option>
-              <option value="es-HN">西班牙语（洪都拉斯）</option>
-              <option value="es-GT">西班牙语（危地马拉）</option>
-              <option value="es-NI">西班牙语（尼加拉瓜）</option>
-              <option value="es-PA">西班牙语（巴拿马）</option>
-              <option value="es-BO">西班牙语（玻利维亚）</option>
-              <option value="es-PY">西班牙语（巴拉圭）</option>
-              <option value="es-SV">西班牙语（萨尔瓦多）</option>
             </select>
           </div>
         </div>
