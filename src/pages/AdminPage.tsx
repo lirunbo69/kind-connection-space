@@ -10,7 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Users, Bot, FileText, Plus, Edit2, Trash2, Coins } from "lucide-react";
+import { Users, Bot, FileText, Plus, Edit2, Trash2, Coins, BarChart3 } from "lucide-react";
+import AnalyticsPanel from "@/components/admin/AnalyticsPanel";
 
 type UserRow = {
   id: string;
