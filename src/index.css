@@ -49,6 +49,94 @@
   }
 }
 
+/* Admin dark tech theme — scoped to .admin-dark */
+.admin-dark {
+  --admin-bg: 220 15% 6%;
+  --admin-bg-secondary: 220 15% 10%;
+  --admin-card: 220 15% 12%;
+  --admin-card-hover: 220 15% 15%;
+  --admin-border: 220 15% 18%;
+  --admin-text: 0 0% 95%;
+  --admin-text-secondary: 220 10% 65%;
+  --admin-neon: 195 100% 50%;
+  --admin-neon-glow: 195 100% 60%;
+  --admin-cyan: 175 80% 45%;
+  --admin-emerald: 160 70% 45%;
+  --admin-rose: 350 80% 60%;
+  --admin-amber: 40 90% 55%;
+  --admin-violet: 265 80% 60%;
+
+  background: linear-gradient(135deg, hsl(var(--admin-bg)), hsl(var(--admin-bg-secondary)));
+  color: hsl(var(--admin-text));
+  min-height: 100vh;
+}
+
+.admin-dark .admin-glass {
+  background: hsl(var(--admin-card) / 0.6);
+  backdrop-filter: blur(16px);
+  border: 1px solid hsl(var(--admin-border) / 0.5);
+  border-radius: 1rem;
+}
+
+.admin-dark .admin-glass:hover {
+  background: hsl(var(--admin-card-hover) / 0.7);
+  border-color: hsl(var(--admin-neon) / 0.3);
+}
+
+.admin-dark .admin-kpi-card {
+  background: hsl(var(--admin-card) / 0.5);
+  backdrop-filter: blur(12px);
+  border: 1px solid hsl(var(--admin-border) / 0.4);
+  border-radius: 0.75rem;
+  transition: all 0.3s ease;
+}
+
+.admin-dark .admin-kpi-card:hover {
+  border-color: hsl(var(--admin-neon) / 0.5);
+  box-shadow: 0 0 20px hsl(var(--admin-neon) / 0.1);
+  transform: translateY(-2px);
+}
+
+.admin-dark .admin-section-header {
+  color: hsl(var(--admin-text));
+  cursor: pointer;
+  user-select: none;
+}
+
+.admin-dark .admin-section-header:hover {
+  color: hsl(var(--admin-neon));
+}
+
+.admin-dark .admin-label {
+  color: hsl(var(--admin-text-secondary));
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.admin-dark .admin-value {
+  color: hsl(var(--admin-text));
+  font-weight: 700;
+}
+
+.admin-dark .admin-neon-text {
+  color: hsl(var(--admin-neon));
+}
+
+.admin-dark .recharts-cartesian-grid line {
+  stroke: hsl(var(--admin-border) / 0.3);
+}
+
+.admin-dark .recharts-text {
+  fill: hsl(var(--admin-text-secondary));
+}
+
+.admin-dark [data-state="active"][role="tab"] {
+  background: hsl(195, 100%, 50%) !important;
+  color: #000 !important;
+  box-shadow: 0 0 12px hsl(195, 100%, 50%, 0.3);
+}
+
 @layer base {
   * {
     @apply border-border;
