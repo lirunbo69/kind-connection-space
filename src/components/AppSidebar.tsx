@@ -1,12 +1,15 @@
-import { PenLine, Layers, BarChart3, Key, Sparkles, Coins, User, Zap, ChevronsLeft, ChevronsRight, LogOut } from "lucide-react";
+import { PenLine, Layers, BarChart3, Key, Sparkles, Coins, User, Zap, ChevronsLeft, ChevronsRight, LogOut, MessageSquare, Shield } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { NavLink } from "@/components/NavLink";
 import { useSidebarCollapsed } from "@/components/SidebarContext";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { useUserPoints } from "@/hooks/useUserPoints";
 
 const navItems = [
   { icon: PenLine, label: "Listing生成工作台", path: "/" },
+  { icon: MessageSquare, label: "AI图文对话", path: "/chat" },
   { icon: Layers, label: "批量生成", path: "/batch" },
   { icon: BarChart3, label: "竞品分析", path: "/analysis" },
   { icon: Key, label: "关键词工具", path: "/keywords" },
@@ -20,6 +23,8 @@ const bottomItems = [
 
 const AppSidebar = () => {
   const { collapsed, setCollapsed } = useSidebarCollapsed();
+  const { isAdmin } = useIsAdmin();
+  const { points } = useUserPoints();
 
   const NavItem = ({ icon: Icon, label, path, end }: { icon: any; label: string; path: string; end?: boolean }) => {
     const link = (
@@ -70,6 +75,9 @@ const AppSidebar = () => {
         {navItems.map((item) => (
           <NavItem key={item.label} {...item} end={item.path === "/"} />
         ))}
+        {isAdmin && (
+          <NavItem icon={Shield} label="管理后台" path="/admin" />
+        )}
       </nav>
 
       <div className="px-2 pb-3 space-y-0.5">
@@ -90,8 +98,8 @@ const AppSidebar = () => {
           </div>
           {!collapsed && (
             <div className="flex-1 min-w-0">
-              <div className="text-xs font-medium text-sidebar-accent-foreground truncate">Pro 会员</div>
-              <div className="text-[11px] text-sidebar-foreground/60">积分: 320 💎</div>
+              <div className="text-xs font-medium text-sidebar-accent-foreground truncate">{isAdmin ? "管理员" : "用户"}</div>
+              <div className="text-[11px] text-sidebar-foreground/60">积分: {points ?? "—"} 💎</div>
             </div>
           )}
         </div>

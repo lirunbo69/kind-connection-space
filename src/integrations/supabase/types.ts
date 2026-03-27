@@ -14,16 +14,180 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      ai_config: {
+        Row: {
+          api_key: string | null
+          created_at: string | null
+          display_name: string
+          id: string
+          image_points_per_image: number
+          input_points_per_1k_tokens: number
+          is_active: boolean
+          model_name: string
+          output_points_per_1k_tokens: number
+        }
+        Insert: {
+          api_key?: string | null
+          created_at?: string | null
+          display_name?: string
+          id?: string
+          image_points_per_image?: number
+          input_points_per_1k_tokens?: number
+          is_active?: boolean
+          model_name: string
+          output_points_per_1k_tokens?: number
+        }
+        Update: {
+          api_key?: string | null
+          created_at?: string | null
+          display_name?: string
+          id?: string
+          image_points_per_image?: number
+          input_points_per_1k_tokens?: number
+          is_active?: boolean
+          model_name?: string
+          output_points_per_1k_tokens?: number
+        }
+        Relationships: []
+      }
+      ai_logs: {
+        Row: {
+          completion_tokens: number
+          created_at: string | null
+          id: string
+          image_count: number
+          model_name: string
+          points_cost: number
+          prompt_tokens: number
+          user_id: string
+        }
+        Insert: {
+          completion_tokens?: number
+          created_at?: string | null
+          id?: string
+          image_count?: number
+          model_name: string
+          points_cost?: number
+          prompt_tokens?: number
+          user_id: string
+        }
+        Update: {
+          completion_tokens?: number
+          created_at?: string | null
+          id?: string
+          image_count?: number
+          model_name?: string
+          points_cost?: number
+          prompt_tokens?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      points_adjustments: {
+        Row: {
+          adjusted_by: string
+          amount: number
+          created_at: string | null
+          id: string
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          adjusted_by: string
+          amount: number
+          created_at?: string | null
+          id?: string
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          adjusted_by?: string
+          amount?: number
+          created_at?: string | null
+          id?: string
+          reason?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          id: string
+          last_sign_in_at: string | null
+          phone: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          id: string
+          last_sign_in_at?: string | null
+          phone?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          last_sign_in_at?: string | null
+          phone?: string | null
+        }
+        Relationships: []
+      }
+      user_points: {
+        Row: {
+          id: string
+          remaining_points: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          remaining_points?: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          id?: string
+          remaining_points?: number
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +314,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+    },
   },
 } as const
