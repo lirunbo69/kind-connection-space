@@ -305,7 +305,7 @@ const AuthPage = ({ onAuth, defaultTab = "login", onBack }: { onAuth: () => void
 
       <Card className="border-border/40 shadow-lg animate-[fadeSlideUp_0.5s_ease-out_0.1s_both]">
         <CardContent className="pt-6">
-          <Tabs defaultValue="login">
+          <Tabs defaultValue={defaultTab}>
             <TabsList className="grid w-full grid-cols-2 mb-4">
               <TabsTrigger value="login">登录</TabsTrigger>
               <TabsTrigger value="signup">注册</TabsTrigger>
