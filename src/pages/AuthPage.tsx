@@ -10,7 +10,7 @@ import { Mail, Phone, ArrowLeft, BarChart3, TrendingUp, Globe, Zap, Layers, PenL
 
 type AuthView = "main" | "forgot-password";
 
-const AuthPage = ({ onAuth }: { onAuth: () => void }) => {
+const AuthPage = ({ onAuth, defaultTab = "login", onBack }: { onAuth: () => void; defaultTab?: string; onBack?: () => void }) => {
   const [view, setView] = useState<AuthView>("main");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -293,6 +293,11 @@ const AuthPage = ({ onAuth }: { onAuth: () => void }) => {
 
   return (
     <FormSection>
+      {onBack && (
+        <button onClick={onBack} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors animate-[fadeSlideUp_0.3s_ease-out]">
+          <ArrowLeft className="w-4 h-4" /> 返回首页
+        </button>
+      )}
       <div className="space-y-1 text-center animate-[fadeSlideUp_0.4s_ease-out]">
         <h2 className="text-xl font-bold text-foreground">欢迎回来</h2>
         <p className="text-sm text-muted-foreground">登录您的账户开始使用</p>
@@ -300,7 +305,7 @@ const AuthPage = ({ onAuth }: { onAuth: () => void }) => {
 
       <Card className="border-border/40 shadow-lg animate-[fadeSlideUp_0.5s_ease-out_0.1s_both]">
         <CardContent className="pt-6">
-          <Tabs defaultValue="login">
+          <Tabs defaultValue={defaultTab}>
             <TabsList className="grid w-full grid-cols-2 mb-4">
               <TabsTrigger value="login">登录</TabsTrigger>
               <TabsTrigger value="signup">注册</TabsTrigger>

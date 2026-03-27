@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import AppSidebar from "@/components/AppSidebar";
 import { SidebarProvider, useSidebarCollapsed } from "@/components/SidebarContext";
 import { supabase } from "@/integrations/supabase/client";
+import LandingPage from "./pages/LandingPage";
 import AuthPage from "./pages/AuthPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import Index from "./pages/Index.tsx";
@@ -35,9 +36,13 @@ const AppLayout = () => {
   );
 };
 
+type UnauthView = "landing" | "auth";
+
 const App = () => {
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [unauthView, setUnauthView] = useState<UnauthView>("landing");
+  const [defaultAuthTab, setDefaultAuthTab] = useState<string>("login");
 
   useEffect(() => {
     supabase.auth.onAuthStateChange((_event, session) => {
@@ -58,8 +63,12 @@ const App = () => {
     );
   }
 
-  // Check if on reset-password route
   const isResetPassword = window.location.pathname === "/reset-password";
+
+  const handleNavigateAuth = (tab?: string) => {
+    if (tab) setDefaultAuthTab(tab);
+    setUnauthView("auth");
+  };
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -74,8 +83,10 @@ const App = () => {
               <AppLayout />
             </SidebarProvider>
           </BrowserRouter>
+        ) : unauthView === "landing" ? (
+          <LandingPage onNavigateAuth={handleNavigateAuth} />
         ) : (
-          <AuthPage onAuth={() => {}} />
+          <AuthPage onAuth={() => {}} defaultTab={defaultAuthTab} onBack={() => setUnauthView("landing")} />
         )}
       </TooltipProvider>
     </QueryClientProvider>
