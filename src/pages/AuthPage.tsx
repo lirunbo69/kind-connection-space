@@ -293,6 +293,11 @@ const AuthPage = ({ onAuth, defaultTab = "login", onBack }: { onAuth: () => void
 
   return (
     <FormSection>
+      {onBack && (
+        <button onClick={onBack} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors animate-[fadeSlideUp_0.3s_ease-out]">
+          <ArrowLeft className="w-4 h-4" /> 返回首页
+        </button>
+      )}
       <div className="space-y-1 text-center animate-[fadeSlideUp_0.4s_ease-out]">
         <h2 className="text-xl font-bold text-foreground">欢迎回来</h2>
         <p className="text-sm text-muted-foreground">登录您的账户开始使用</p>
