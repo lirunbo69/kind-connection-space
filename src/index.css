@@ -59,3 +59,32 @@
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial, sans-serif;
   }
 }
+
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes floatBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes pulseScale {
+  0%, 100% { transform: scale(1); opacity: 0.15; }
+  50% { transform: scale(1.08); opacity: 0.25; }
+}
+
+@keyframes lineReveal {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes dotPop {
+  from { r: 0; opacity: 0; }
+  to { r: 3; opacity: 1; }
+}
+
+@keyframes chartDraw {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
