@@ -415,4 +415,85 @@ const LogsView = () => {
   );
 };
 
+// ── Recharge Records View (Admin) ──
+type RechargeRow = {
+  id: string;
+  user_id: string;
+  amount: number;
+  points: number;
+  status: string;
+  created_at: string;
+  user_email?: string;
+};
+
+const RechargeRecordsView = () => {
+  const [records, setRecords] = useState<RechargeRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchRecords = async () => {
+      const { data } = await supabase
+        .from("recharge_records")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(200);
+
+      if (!data) { setLoading(false); return; }
+
+      const userIds = [...new Set(data.map((r: any) => r.user_id))];
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, email, phone")
+        .in("id", userIds);
+
+      const profileMap = new Map(profiles?.map((p) => [p.id, p.email || p.phone || "—"]) || []);
+
+      setRecords(data.map((r: any) => ({
+        ...r,
+        user_email: profileMap.get(r.user_id) || "—",
+      })));
+      setLoading(false);
+    };
+    fetchRecords();
+  }, []);
+
+  return (
+    <Card>
+      <CardHeader><CardTitle>充值记录（最近200条）</CardTitle></CardHeader>
+      <CardContent>
+        {loading ? (
+          <div className="text-center py-8 text-muted-foreground">加载中...</div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>用户</TableHead>
+                <TableHead>金额</TableHead>
+                <TableHead>到账积分</TableHead>
+                <TableHead>状态</TableHead>
+                <TableHead>时间</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {records.map((r) => (
+                <TableRow key={r.id}>
+                  <TableCell className="text-xs">{r.user_email}</TableCell>
+                  <TableCell className="font-medium">¥{r.amount}</TableCell>
+                  <TableCell className="font-semibold">+{r.points.toLocaleString()}</TableCell>
+                  <TableCell>
+                    <span className={`px-2 py-1 rounded-full text-xs ${r.status === "success" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
+                      {r.status === "success" ? "成功" : r.status}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-xs">{new Date(r.created_at).toLocaleString("zh-CN")}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
 export default AdminPage;
