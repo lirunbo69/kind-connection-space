@@ -1,4 +1,6 @@
-import { PenLine, Layers, BarChart3, Key, Sparkles, Coins, User, Zap, ChevronsLeft, ChevronsRight } from "lucide-react";
+import { PenLine, Layers, BarChart3, Key, Sparkles, Coins, User, Zap, ChevronsLeft, ChevronsRight, LogOut } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { NavLink } from "@/components/NavLink";
 import { useSidebarCollapsed } from "@/components/SidebarContext";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -93,6 +95,18 @@ const AppSidebar = () => {
             </div>
           )}
         </div>
+
+        {/* Logout button */}
+        <button
+          onClick={async () => {
+            await supabase.auth.signOut();
+            toast.success("已退出登录");
+          }}
+          className={`w-full flex items-center ${collapsed ? "justify-center px-2" : "gap-2.5 px-3"} py-2.5 rounded-lg text-sm text-destructive hover:bg-destructive/10 transition-colors`}
+        >
+          <LogOut className="w-4 h-4 shrink-0" />
+          {!collapsed && <span>退出登录</span>}
+        </button>
 
         {/* Collapse toggle */}
         <button
