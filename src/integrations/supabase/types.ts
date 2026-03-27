@@ -83,6 +83,39 @@ export type Database = {
         }
         Relationships: []
       }
+      page_views: {
+        Row: {
+          created_at: string
+          device_type: string
+          id: string
+          ip_address: string | null
+          page_path: string
+          user_agent: string | null
+          visit_date: string
+          visitor_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_type?: string
+          id?: string
+          ip_address?: string | null
+          page_path: string
+          user_agent?: string | null
+          visit_date?: string
+          visitor_id: string
+        }
+        Update: {
+          created_at?: string
+          device_type?: string
+          id?: string
+          ip_address?: string | null
+          page_path?: string
+          user_agent?: string | null
+          visit_date?: string
+          visitor_id?: string
+        }
+        Relationships: []
+      }
       points_adjustments: {
         Row: {
           adjusted_by: string
