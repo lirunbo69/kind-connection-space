@@ -131,6 +131,12 @@
   fill: hsl(var(--admin-text-secondary));
 }
 
+.admin-dark [data-state="active"][role="tab"] {
+  background: hsl(195, 100%, 50%) !important;
+  color: #000 !important;
+  box-shadow: 0 0 12px hsl(195, 100%, 50%, 0.3);
+}
+
 @layer base {
   * {
     @apply border-border;
