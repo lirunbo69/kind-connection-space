@@ -24,12 +24,13 @@ const SystemMonitorPanel = () => {
       const { error: dbErr } = await supabase.from("profiles").select("id").limit(1);
       if (dbErr) dbOk = "error";
 
-      // Check edge function
+      // Check edge function availability via a lightweight call
       try {
-        const { error } = await supabase.functions.invoke("generate-listing", {
-          body: { ping: true },
-        });
-        // Even an error response means the function is reachable
+        const resp = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-listing`,
+          { method: "OPTIONS" }
+        );
+        if (!resp.ok && resp.status !== 204 && resp.status !== 404) apiOk = "error";
       } catch {
         apiOk = "error";
       }
