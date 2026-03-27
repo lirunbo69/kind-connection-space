@@ -10,7 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Users, Bot, FileText, Plus, Edit2, Trash2, Coins } from "lucide-react";
+import { Users, Bot, FileText, Plus, Edit2, Trash2, Coins, BarChart3 } from "lucide-react";
+import AnalyticsPanel from "@/components/admin/AnalyticsPanel";
 
 type UserRow = {
   id: string;
@@ -67,11 +68,13 @@ const AdminPage = () => {
           <TabsTrigger value="models" className="gap-1"><Bot className="w-4 h-4" />模型管理</TabsTrigger>
           <TabsTrigger value="logs" className="gap-1"><FileText className="w-4 h-4" />调用日志</TabsTrigger>
           <TabsTrigger value="recharge" className="gap-1"><Coins className="w-4 h-4" />充值记录</TabsTrigger>
+          <TabsTrigger value="analytics" className="gap-1"><BarChart3 className="w-4 h-4" />访问统计</TabsTrigger>
         </TabsList>
         <TabsContent value="users"><UserManagement /></TabsContent>
         <TabsContent value="models"><ModelManagement /></TabsContent>
         <TabsContent value="logs"><LogsView /></TabsContent>
         <TabsContent value="recharge"><RechargeRecordsView /></TabsContent>
+        <TabsContent value="analytics"><AnalyticsPanel /></TabsContent>
       </Tabs>
     </div>
   );
