@@ -44,7 +44,7 @@ const AppSidebar = () => {
   };
 
   return (
-    <aside className={`fixed left-0 top-0 bottom-0 ${w} bg-sidebar flex flex-col border-r border-sidebar-border z-20 transition-all duration-200`}>
+    <aside className={`fixed left-0 top-0 bottom-0 ${collapsed ? "w-16" : "w-52"} bg-sidebar flex flex-col border-r border-sidebar-border z-20 transition-all duration-200`}>
       {/* Logo */}
       <div className={`flex items-center ${collapsed ? "justify-center px-2" : "gap-3 px-5"} py-5`}>
         <img src="/logo.png" alt="秒通" className="w-9 h-9 rounded-xl shadow-lg shadow-primary/30 shrink-0" width={36} height={36} />
