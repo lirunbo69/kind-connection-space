@@ -13,6 +13,7 @@ serve(async (req) => {
   }
 
   try {
+    // --- Auth ---
     const authHeader = req.headers.get("authorization");
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "未登录" }), {
@@ -25,7 +26,6 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    // Auth client to get user
     const userClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -37,11 +37,10 @@ serve(async (req) => {
       });
     }
 
-    // Service client for DB operations
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
+    // --- Parse request ---
     const { messages, model_id, images } = await req.json();
-    // images: array of base64 data URIs
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return new Response(JSON.stringify({ error: "消息不能为空" }), {
@@ -50,7 +49,7 @@ serve(async (req) => {
       });
     }
 
-    // Get user points
+    // --- Check points ---
     const { data: pointsData, error: pointsError } = await adminClient
       .from("user_points")
       .select("remaining_points")
@@ -71,8 +70,8 @@ serve(async (req) => {
       });
     }
 
-    // Get model config
-    let modelConfig;
+    // --- Get model config ---
+    let modelConfig: any;
     if (model_id) {
       const { data } = await adminClient
         .from("ai_config")
@@ -83,7 +82,6 @@ serve(async (req) => {
       modelConfig = data;
     }
     if (!modelConfig) {
-      // Use first active model
       const { data } = await adminClient
         .from("ai_config")
         .select("*")
@@ -102,14 +100,13 @@ serve(async (req) => {
 
     const imageCount = images?.length || 0;
 
-    // Estimate input cost (rough: 4 chars ≈ 1 token)
+    // --- Estimate cost & pre-check ---
     const inputText = messages.map((m: any) => m.content || "").join(" ");
     const estimatedInputTokens = Math.ceil(inputText.length / 4);
     const imageCost = imageCount * modelConfig.image_points_per_image;
     const inputCost = Math.ceil((estimatedInputTokens / 1000) * modelConfig.input_points_per_1k_tokens);
-    
-    // Pre-check: at least enough for input + images + minimum output
     const minCost = inputCost + imageCost + modelConfig.output_points_per_1k_tokens;
+
     if (pointsData.remaining_points < minCost) {
       return new Response(JSON.stringify({ error: `积分不足，预计需要至少 ${minCost} 积分` }), {
         status: 402,
@@ -117,49 +114,72 @@ serve(async (req) => {
       });
     }
 
-    // Build messages for AI API
-    const apiMessages: any[] = [
-      { role: "system", content: "你是一个智能AI助手，可以进行图文对话。请用中文回复用户的问题。" },
-    ];
+    // --- Build Gemini API messages ---
+    // Map model_name from ai_config to actual Gemini model ID
+    // ai_config stores names like "google/gemini-2.5-flash" → Gemini API uses "gemini-2.5-flash"
+    const geminiModel = modelConfig.model_name.replace("google/", "");
+
+    const contents: any[] = [];
+
+    // System instruction is separate in Gemini API
+    const systemInstruction = "你是一个智能AI助手，可以进行图文对话。请用中文回复用户的问题。";
 
     for (const msg of messages) {
+      const parts: any[] = [];
+
+      if (msg.content) {
+        parts.push({ text: msg.content });
+      }
+
+      // Handle images for user messages
       if (msg.role === "user" && msg.images && msg.images.length > 0) {
-        // Multimodal message with images
-        const content: any[] = [];
-        if (msg.content) {
-          content.push({ type: "text", text: msg.content });
-        }
         for (const img of msg.images) {
-          content.push({
-            type: "image_url",
-            image_url: { url: img },
-          });
+          // img is a base64 data URI like "data:image/jpeg;base64,..."
+          const match = img.match(/^data:([^;]+);base64,(.+)$/);
+          if (match) {
+            parts.push({
+              inline_data: {
+                mime_type: match[1],
+                data: match[2],
+              },
+            });
+          }
         }
-        apiMessages.push({ role: "user", content });
-      } else {
-        apiMessages.push({ role: msg.role, content: msg.content });
+      }
+
+      if (parts.length > 0) {
+        contents.push({
+          role: msg.role === "assistant" ? "model" : "user",
+          parts,
+        });
       }
     }
 
-    // Use Lovable AI Gateway (no custom API key needed)
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      return new Response(JSON.stringify({ error: "AI服务未配置" }), {
+    // --- Call Google Gemini API directly ---
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) {
+      return new Response(JSON.stringify({ error: "Gemini API Key 未配置" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${GEMINI_API_KEY}`;
+
+    const geminiBody: any = {
+      contents,
+      systemInstruction: {
+        parts: [{ text: systemInstruction }],
       },
-      body: JSON.stringify({
-        model: modelConfig.model_name,
-        messages: apiMessages,
-      }),
+      generationConfig: {
+        maxOutputTokens: 8192,
+      },
+    };
+
+    const aiResponse = await fetch(geminiUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(geminiBody),
     });
 
     if (!aiResponse.ok) {
@@ -171,33 +191,43 @@ serve(async (req) => {
         });
       }
       const errText = await aiResponse.text();
-      console.error("AI error:", status, errText);
-      return new Response(JSON.stringify({ error: "AI服务暂时不可用" }), {
+      console.error("Gemini API error:", status, errText);
+      return new Response(JSON.stringify({ error: "AI服务暂时不可用，请稍后再试" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const aiData = await aiResponse.json();
-    const reply = aiData.choices?.[0]?.message?.content || "";
-    const usage = aiData.usage || {};
-    
-    const promptTokens = usage.prompt_tokens || estimatedInputTokens;
-    const completionTokens = usage.completion_tokens || Math.ceil(reply.length / 4);
 
-    // Calculate actual cost
+    // Extract reply from Gemini response
+    const reply = aiData.candidates?.[0]?.content?.parts
+      ?.map((p: any) => p.text || "")
+      .join("") || "";
+
+    // Extract token usage from Gemini response
+    const usageMetadata = aiData.usageMetadata || {};
+    const promptTokens = usageMetadata.promptTokenCount || estimatedInputTokens;
+    const completionTokens = usageMetadata.candidatesTokenCount || Math.ceil(reply.length / 4);
+
+    // --- Calculate actual cost ---
     const actualInputCost = Math.ceil((promptTokens / 1000) * modelConfig.input_points_per_1k_tokens);
     const actualOutputCost = Math.ceil((completionTokens / 1000) * modelConfig.output_points_per_1k_tokens);
     const totalCost = actualInputCost + imageCost + actualOutputCost;
 
-    // Deduct points
+    // --- Deduct points ---
     const newPoints = Math.max(0, pointsData.remaining_points - totalCost);
-    await adminClient
+    const { error: updateError } = await adminClient
       .from("user_points")
       .update({ remaining_points: newPoints, updated_at: new Date().toISOString() })
       .eq("user_id", user.id);
 
-    // Log usage
+    if (updateError) {
+      console.error("Failed to deduct points:", updateError);
+      // Still return the reply but warn about points
+    }
+
+    // --- Log usage ---
     await adminClient.from("ai_logs").insert({
       user_id: user.id,
       model_name: modelConfig.display_name || modelConfig.model_name,
