@@ -7,6 +7,7 @@ import AppSidebar from "@/components/AppSidebar";
 import Index from "./pages/Index.tsx";
 import BatchPage from "./pages/BatchPage.tsx";
 import CompetitorPage from "./pages/CompetitorPage.tsx";
+import ProfilePage from "./pages/ProfilePage.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
