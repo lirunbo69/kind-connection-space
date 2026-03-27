@@ -372,48 +372,19 @@ const AuthPage = ({ onAuth, defaultTab = "login", onBack }: { onAuth: () => void
             </TabsContent>
 
             <TabsContent value="signup">
-              <Tabs defaultValue="phone-signup">
-                <TabsList className="grid w-full grid-cols-2 mb-4 h-9">
-                  <TabsTrigger value="phone-signup" className="text-xs gap-1">
-                    <Phone className="w-3 h-3" />手机号注册
-                  </TabsTrigger>
-                  <TabsTrigger value="email-signup" className="text-xs gap-1">
-                    <Mail className="w-3 h-3" />邮箱注册
-                  </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="phone-signup">
-                  <form onSubmit={handlePhoneSignup} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>手机号</Label>
-                      <Input type="tel" placeholder="+86 13800138000" value={phone} onChange={(e) => setPhone(e.target.value)} required />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>密码</Label>
-                      <Input type="password" placeholder="至少6位密码" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
-                    </div>
-                    <Button type="submit" className="w-full bg-amber-500 hover:bg-amber-600 text-white" disabled={loading}>
-                      {loading ? "注册中..." : "注册"}
-                    </Button>
-                  </form>
-                </TabsContent>
-
-                <TabsContent value="email-signup">
-                  <form onSubmit={handleEmailSignup} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>邮箱</Label>
-                      <Input type="email" placeholder="your@email.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>密码</Label>
-                      <Input type="password" placeholder="至少6位密码" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
-                    </div>
-                    <Button type="submit" className="w-full bg-amber-500 hover:bg-amber-600 text-white" disabled={loading}>
-                      {loading ? "注册中..." : "注册"}
-                    </Button>
-                  </form>
-                </TabsContent>
-              </Tabs>
+              <form onSubmit={handleEmailSignup} className="space-y-4">
+                <div className="space-y-2">
+                  <Label>邮箱</Label>
+                  <Input type="email" placeholder="your@email.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                </div>
+                <div className="space-y-2">
+                  <Label>密码</Label>
+                  <Input type="password" placeholder="至少6位密码" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
+                </div>
+                <Button type="submit" className="w-full bg-amber-500 hover:bg-amber-600 text-white" disabled={loading}>
+                  {loading ? "注册中..." : "注册"}
+                </Button>
+              </form>
             </TabsContent>
           </Tabs>
         </CardContent>
