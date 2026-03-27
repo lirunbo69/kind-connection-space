@@ -8,6 +8,7 @@ import AppSidebar from "@/components/AppSidebar";
 import { SidebarProvider, useSidebarCollapsed } from "@/components/SidebarContext";
 import { supabase } from "@/integrations/supabase/client";
 import AuthPage from "./pages/AuthPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 import Index from "./pages/Index.tsx";
 import BatchPage from "./pages/BatchPage.tsx";
 import CompetitorPage from "./pages/CompetitorPage.tsx";
@@ -57,12 +58,17 @@ const App = () => {
     );
   }
 
+  // Check if on reset-password route
+  const isResetPassword = window.location.pathname === "/reset-password";
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        {session ? (
+        {isResetPassword ? (
+          <ResetPasswordPage />
+        ) : session ? (
           <BrowserRouter>
             <SidebarProvider>
               <AppLayout />
