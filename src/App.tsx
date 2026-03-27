@@ -7,6 +7,7 @@ import AppSidebar from "@/components/AppSidebar";
 import Index from "./pages/Index.tsx";
 import BatchPage from "./pages/BatchPage.tsx";
 import CompetitorPage from "./pages/CompetitorPage.tsx";
+import ProfilePage from "./pages/ProfilePage.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/batch" element={<BatchPage />} />
               <Route path="/analysis" element={<CompetitorPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </main>
