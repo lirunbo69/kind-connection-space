@@ -65,22 +65,32 @@ const AdminPage = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">管理后台</h1>
-        <p className="text-sm text-muted-foreground">用户管理、AI模型配置、日志查看</p>
+        <h1 className="text-2xl font-bold">站长经营控制台</h1>
+        <p className="text-sm text-muted-foreground">实时数据大屏 · 营收分析 · 用户运营 · 系统监控</p>
       </div>
-      <Tabs defaultValue="users">
-        <TabsList>
+      <Tabs defaultValue="dashboard">
+        <TabsList className="flex-wrap h-auto gap-1">
+          <TabsTrigger value="dashboard" className="gap-1"><LayoutDashboard className="w-4 h-4" />数据大屏</TabsTrigger>
+          <TabsTrigger value="analytics" className="gap-1"><BarChart3 className="w-4 h-4" />访问统计</TabsTrigger>
+          <TabsTrigger value="sales" className="gap-1"><ShoppingCart className="w-4 h-4" />销售报表</TabsTrigger>
+          <TabsTrigger value="orders" className="gap-1"><Coins className="w-4 h-4" />订单管理</TabsTrigger>
+          <TabsTrigger value="user-analytics" className="gap-1"><UserCheck className="w-4 h-4" />用户分析</TabsTrigger>
+          <TabsTrigger value="ai-cost" className="gap-1"><Cpu className="w-4 h-4" />AI成本</TabsTrigger>
           <TabsTrigger value="users" className="gap-1"><Users className="w-4 h-4" />用户管理</TabsTrigger>
           <TabsTrigger value="models" className="gap-1"><Bot className="w-4 h-4" />模型管理</TabsTrigger>
           <TabsTrigger value="logs" className="gap-1"><FileText className="w-4 h-4" />调用日志</TabsTrigger>
-          <TabsTrigger value="recharge" className="gap-1"><Coins className="w-4 h-4" />充值记录</TabsTrigger>
-          <TabsTrigger value="analytics" className="gap-1"><BarChart3 className="w-4 h-4" />访问统计</TabsTrigger>
+          <TabsTrigger value="system" className="gap-1"><Shield className="w-4 h-4" />系统监控</TabsTrigger>
         </TabsList>
+        <TabsContent value="dashboard"><DashboardOverview /></TabsContent>
+        <TabsContent value="analytics"><AnalyticsPanel /></TabsContent>
+        <TabsContent value="sales"><SalesReportPanel /></TabsContent>
+        <TabsContent value="orders"><OrderManagementPanel /></TabsContent>
+        <TabsContent value="user-analytics"><UserAnalyticsPanel /></TabsContent>
+        <TabsContent value="ai-cost"><AICostPanel /></TabsContent>
         <TabsContent value="users"><UserManagement /></TabsContent>
         <TabsContent value="models"><ModelManagement /></TabsContent>
         <TabsContent value="logs"><LogsView /></TabsContent>
-        <TabsContent value="recharge"><RechargeRecordsView /></TabsContent>
-        <TabsContent value="analytics"><AnalyticsPanel /></TabsContent>
+        <TabsContent value="system"><SystemMonitorPanel /></TabsContent>
       </Tabs>
     </div>
   );
