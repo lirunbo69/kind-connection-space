@@ -20,6 +20,29 @@ interface ProductFormProps {
 }
 
 const ProductForm = ({ onGenerate, isLoading }: ProductFormProps) => {
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [uploadedFileName, setUploadedFileName] = useState<string>("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) return;
+    if (file.size > 5 * 1024 * 1024) return; // 5MB limit
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setUploadedImage(ev.target?.result as string);
+      setUploadedFileName(file.name);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeImage = () => {
+    setUploadedImage(null);
+    setUploadedFileName("");
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
   const [formData, setFormData] = useState<ProductFormData>({
     productName: "",
     productDescription: "",
