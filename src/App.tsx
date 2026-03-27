@@ -16,6 +16,7 @@ import CompetitorPage from "./pages/CompetitorPage.tsx";
 import ProfilePage from "./pages/ProfilePage.tsx";
 import ChatPage from "./pages/ChatPage.tsx";
 import AdminPage from "./pages/AdminPage.tsx";
+import TopupPage from "./pages/TopupPage.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ const AppLayout = () => {
           <Route path="/batch" element={<BatchPage />} />
           <Route path="/analysis" element={<CompetitorPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/topup" element={<TopupPage />} />
           <Route path="/admin" element={<AdminPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
