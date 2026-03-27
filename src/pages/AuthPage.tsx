@@ -48,7 +48,9 @@ const AuthPage = ({ onAuth, defaultTab = "login", onBack }: { onAuth: () => void
       toast({ title: "注册成功", description: "欢迎使用！" });
       onAuth();
     } else {
-      toast({ title: "注册成功", description: "请检查邮箱完成验证后登录。" });
+      toast({ title: "注册成功", description: "请使用邮箱和密码登录。" });
+      setPassword("");
+      setActiveTab("login");
     }
   };
 
@@ -63,7 +65,9 @@ const AuthPage = ({ onAuth, defaultTab = "login", onBack }: { onAuth: () => void
       toast({ title: "注册成功", description: "欢迎使用！" });
       onAuth();
     } else {
-      toast({ title: "注册成功", description: "手机号注册成功，请登录。" });
+      toast({ title: "注册成功", description: "请使用手机号和密码登录。" });
+      setPassword("");
+      setActiveTab("login");
     }
   };
 
