@@ -53,8 +53,22 @@ const ProductForm = ({ onGenerate, isLoading }: ProductFormProps) => {
     imageCount: "",
   });
 
+  const marketToLanguage: Record<string, string> = {
+    MX: "es-MX",
+    BR: "pt-BR",
+    CL: "es-CL",
+    CO: "es-CO",
+    AR: "es-AR",
+    UY: "es-UY",
+  };
+
   const updateField = (field: keyof ProductFormData, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    if (field === "market") {
+      const lang = marketToLanguage[value] || "";
+      setFormData((prev) => ({ ...prev, market: value, language: lang }));
+    } else {
+      setFormData((prev) => ({ ...prev, [field]: value }));
+    }
   };
 
   const handleSubmit = () => {
