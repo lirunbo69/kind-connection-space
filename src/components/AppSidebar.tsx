@@ -107,8 +107,4 @@ const AppSidebar = () => {
   );
 };
 
-export { AppSidebar as default, type {} };
-
-// Export a hook to get sidebar width for main content offset
-import { createContext, useContext } from "react";
-export const SidebarCollapsedContext = createContext(false);
+export default AppSidebar;
