@@ -14,6 +14,8 @@ import Index from "./pages/Index.tsx";
 import BatchPage from "./pages/BatchPage.tsx";
 import CompetitorPage from "./pages/CompetitorPage.tsx";
 import ProfilePage from "./pages/ProfilePage.tsx";
+import ChatPage from "./pages/ChatPage.tsx";
+import AdminPage from "./pages/AdminPage.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -26,9 +28,11 @@ const AppLayout = () => {
       <main className={`flex-1 ${collapsed ? "ml-16" : "ml-52"} px-8 py-6 transition-all duration-200`}>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/chat" element={<ChatPage />} />
           <Route path="/batch" element={<BatchPage />} />
           <Route path="/analysis" element={<CompetitorPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/admin" element={<AdminPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
