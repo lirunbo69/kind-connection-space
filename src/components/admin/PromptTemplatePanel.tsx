@@ -167,12 +167,19 @@ const PromptTemplatePanel = () => {
               </div>
               <div className="space-y-2">
                 <Label style={labelStyle}>AI 模型</Label>
-                <Input
-                  value={form.model}
-                  onChange={e => setForm({ ...form, model: e.target.value })}
-                  placeholder="google/gemini-2.5-flash"
-                  style={inputStyle}
-                />
+                <Select value={form.model} onValueChange={v => setForm({ ...form, model: v })}>
+                  <SelectTrigger style={inputStyle} className="w-full">
+                    <SelectValue placeholder="选择模型" />
+                  </SelectTrigger>
+                  <SelectContent style={{ background: "hsl(220, 15%, 15%)", border: "1px solid hsl(220, 15%, 22%)" }}>
+                    {OPENROUTER_MODELS.map(m => (
+                      <SelectItem key={m.value} value={m.value} style={{ color: "#fff" }} className="focus:bg-[hsl(220,15%,22%)] focus:text-white">
+                        <span className="font-medium">{m.label}</span>
+                        <span className="ml-2 text-xs opacity-50">{m.value}</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <div className="space-y-2">
