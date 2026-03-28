@@ -8,12 +8,14 @@ import { toast } from "sonner";
 
 type Status = "waiting" | "running" | "done";
 
+const STEP_LABELS = ["卖点分析", "标题生成", "描述生成", "主图生成", "轮播图规划", "轮播图生成"];
+
 const Index = () => {
   const [statuses, setStatuses] = useState<Status[]>(Array(6).fill("waiting"));
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<ListingResult | null>(null);
 
-  const updatePipelineStep = (step: number, status: Status) => {
+  const updateStep = (step: number, status: Status) => {
     setStatuses((prev) => {
       const next = [...prev];
       next[step] = status;
@@ -26,8 +28,10 @@ const Index = () => {
     setResult(null);
     setStatuses(Array(6).fill("waiting"));
 
-    // Step 0: 卖点分析
-    updatePipelineStep(0, "running");
+    // Show all steps as running progressively for UX
+    for (let i = 0; i < 6; i++) {
+      updateStep(i, "running");
+    }
 
     try {
       const { data, error } = await supabase.functions.invoke("generate-listing", {
@@ -38,36 +42,23 @@ const Index = () => {
           market: formData.market,
           language: formData.language,
           titleLimit: formData.titleLimit,
+          imageCount: formData.imageCount,
         },
       });
 
-      if (error) {
-        throw new Error(error.message || "生成失败");
-      }
+      if (error) throw new Error(error.message || "生成失败");
+      if (data?.error) throw new Error(data.error);
 
-      if (data?.error) {
-        throw new Error(data.error);
-      }
-
-      // Simulate pipeline progression for visual effect
-      for (let i = 0; i <= 2; i++) {
-        if (i > 0) updatePipelineStep(i - 1, "done");
-        updatePipelineStep(i, "running");
-        await new Promise((r) => setTimeout(r, 400));
-      }
-      updatePipelineStep(2, "done");
-
-      // Set text results
+      // Mark all steps done and set results
+      setStatuses(Array(6).fill("done"));
       setResult({
         title: data.title,
         sellingPoints: data.sellingPoints,
         description: data.description,
+        mainImage: data.mainImage,
+        carouselPlan: data.carouselPlan,
+        carouselImages: data.carouselImages,
       });
-
-      // Mark remaining steps as done (image generation not yet implemented)
-      for (let i = 3; i < 6; i++) {
-        updatePipelineStep(i, "done");
-      }
 
       toast.success("Listing 生成完成！");
     } catch (err: any) {
