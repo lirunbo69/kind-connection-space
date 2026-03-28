@@ -200,7 +200,7 @@ serve(async (req) => {
     };
 
     const DEFAULT_TEXT_MODEL = "google/gemini-2.5-flash";
-    const DEFAULT_IMAGE_MODEL = "google/gemini-2.5-flash";
+    const DEFAULT_IMAGE_MODEL = "google/gemini-3-pro-image-preview";
 
     // ===== Step 1: 卖点分析 =====
     console.log("[Step 1] 卖点分析");
