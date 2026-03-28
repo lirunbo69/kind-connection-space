@@ -9,6 +9,14 @@ const corsHeaders = {
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 const LOVABLE_AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
+function isRemoteImageUrl(value: string) {
+  return /^https?:\/\//i.test(value);
+}
+
+function getOpenRouterCompatibleImages(images?: string[]) {
+  return (images || []).filter((img) => typeof img === "string" && isRemoteImageUrl(img));
+}
+
 async function callOpenRouter(
   apiKey: string,
   model: string,
@@ -40,8 +48,15 @@ async function callOpenRouterWithImages(
   textPrompt: string,
   imageUrls: string[],
 ) {
+  const compatibleImages = getOpenRouterCompatibleImages(imageUrls);
+
+  if (compatibleImages.length === 0) {
+    console.log("OpenRouter multimodal skipped: no compatible remote image URLs provided");
+    return callOpenRouter(apiKey, model, [{ role: "user", content: textPrompt }]);
+  }
+
   const content: any[] = [{ type: "text", text: textPrompt }];
-  for (const url of imageUrls) {
+  for (const url of compatibleImages) {
     content.push({ type: "image_url", image_url: { url } });
   }
 
@@ -158,6 +173,9 @@ serve(async (req) => {
     const hasWhiteBg = Array.isArray(whiteBgImages) && whiteBgImages.length > 0;
     const hasRef = Array.isArray(referenceImages) && referenceImages.length > 0;
     const hasHotSearch = Array.isArray(hotSearchImages) && hotSearchImages.length > 0;
+    const openRouterWhiteBgImages = getOpenRouterCompatibleImages(whiteBgImages);
+    const openRouterReferenceImages = getOpenRouterCompatibleImages(referenceImages);
+    const openRouterHotSearchImages = getOpenRouterCompatibleImages(hotSearchImages);
 
     const baseVars: Record<string, string> = {
       product_name: productName,
@@ -185,9 +203,9 @@ serve(async (req) => {
 
     // Collect all user images for multimodal calls
     const allUserImages: string[] = [
-      ...(whiteBgImages || []),
-      ...(referenceImages || []),
-      ...(hotSearchImages || []),
+      ...openRouterWhiteBgImages,
+      ...openRouterReferenceImages,
+      ...openRouterHotSearchImages,
     ];
 
     // ===== Step 1: 卖点分析 =====
@@ -216,8 +234,8 @@ serve(async (req) => {
       DEFAULT_TEXT_MODEL);
 
     let title: string;
-    if (hasHotSearch) {
-      title = (await callOpenRouterWithImages(apiKey, step2.model, renderTemplate(step2.content, varsWithSP), hotSearchImages!)).trim();
+     if (openRouterHotSearchImages.length > 0) {
+       title = (await callOpenRouterWithImages(apiKey, step2.model, renderTemplate(step2.content, varsWithSP), openRouterHotSearchImages)).trim();
     } else {
       title = (await callOpenRouter(apiKey, step2.model, [{ role: "user", content: renderTemplate(step2.content, varsWithSP) }])).trim();
     }
@@ -250,8 +268,8 @@ serve(async (req) => {
       DEFAULT_TEXT_MODEL);
     
     let carouselPlanRaw: string;
-    if (hasRef) {
-      carouselPlanRaw = await callOpenRouterWithImages(apiKey, step5.model, renderTemplate(step5.content, varsWithSP), referenceImages!);
+     if (openRouterReferenceImages.length > 0) {
+       carouselPlanRaw = await callOpenRouterWithImages(apiKey, step5.model, renderTemplate(step5.content, varsWithSP), openRouterReferenceImages);
     } else {
       carouselPlanRaw = await callOpenRouter(apiKey, step5.model, [{ role: "user", content: renderTemplate(step5.content, varsWithSP) }]);
     }
