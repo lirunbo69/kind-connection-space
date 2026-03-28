@@ -48,11 +48,14 @@ async function callOpenRouterWithImages(
   return callOpenRouter(apiKey, model, [{ role: "user", content }]);
 }
 
-async function generateImage(apiKey: string, model: string, prompt: string, referenceImages?: string[]): Promise<string> {
-  const messages: any[] = [];
+async function generateImage(prompt: string, referenceImages?: string[]): Promise<string> {
+  const lovableKey = Deno.env.get("LOVABLE_API_KEY");
+  if (!lovableKey) throw new Error("LOVABLE_API_KEY is not configured");
 
+  const IMAGE_MODEL = "google/gemini-2.5-flash-image";
+
+  const messages: any[] = [];
   if (referenceImages && referenceImages.length > 0) {
-    // Multimodal: text + reference images
     const content: any[] = [{ type: "text", text: prompt }];
     for (const img of referenceImages) {
       content.push({ type: "image_url", image_url: { url: img } });
@@ -62,14 +65,14 @@ async function generateImage(apiKey: string, model: string, prompt: string, refe
     messages.push({ role: "user", content: prompt });
   }
 
-  const res = await fetch(OPENROUTER_URL, {
+  const res = await fetch(LOVABLE_AI_URL, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${apiKey}`,
+      Authorization: `Bearer ${lovableKey}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: model || "black-forest-labs/flux-schnell",
+      model: IMAGE_MODEL,
       messages,
       modalities: ["image", "text"],
     }),
@@ -84,29 +87,26 @@ async function generateImage(apiKey: string, model: string, prompt: string, refe
   const data = await res.json();
   console.log("Image response structure:", JSON.stringify(data).substring(0, 500));
 
-  const content = data.choices?.[0]?.message?.content;
+  // Check images array (Lovable AI gateway format)
+  const images = data.choices?.[0]?.message?.images;
+  if (Array.isArray(images) && images.length > 0) {
+    if (images[0].image_url?.url) return images[0].image_url.url;
+  }
 
+  const content = data.choices?.[0]?.message?.content;
   if (typeof content === "string") {
     const mdMatch = content.match(/!\[.*?\]\((https?:\/\/[^\s)]+)\)/);
     if (mdMatch) return mdMatch[1];
+    const b64Match = content.match(/data:image\/[^;]+;base64,[A-Za-z0-9+/=]+/);
+    if (b64Match) return b64Match[0];
     if (content.startsWith("http")) return content.trim();
   }
 
   if (Array.isArray(content)) {
     for (const part of content) {
       if (part.type === "image_url" && part.image_url?.url) return part.image_url.url;
-      if (part.type === "image" && part.url) return part.url;
     }
   }
-
-  // Check images array in message
-  const images = data.choices?.[0]?.message?.images;
-  if (Array.isArray(images) && images.length > 0) {
-    if (images[0].image_url?.url) return images[0].image_url.url;
-  }
-
-  if (data.data?.[0]?.url) return data.data[0].url;
-  if (data.data?.[0]?.b64_json) return `data:image/png;base64,${data.data[0].b64_json}`;
 
   console.error("Could not extract image from response:", JSON.stringify(data).substring(0, 1000));
   return "";
