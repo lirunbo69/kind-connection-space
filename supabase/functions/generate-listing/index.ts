@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-const TEXT_MODEL = "google/gemini-2.5-flash-preview-05-20";
+const TEXT_MODEL = "google/gemini-2.5-flash";
 const IMAGE_MODEL = "black-forest-labs/flux-schnell";
 
 async function callOpenRouter(
