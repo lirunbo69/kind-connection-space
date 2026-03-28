@@ -29,12 +29,26 @@ const Index = () => {
   });
 
   useEffect(() => {
-    if (formData) sessionStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(formData));
+    if (formData) {
+      try {
+        // Don't persist image arrays to avoid quota issues
+        const { whiteBgImages, referenceImages, hotSearchImages, ...rest } = formData;
+        sessionStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(rest));
+      } catch { /* quota exceeded, ignore */ }
+    }
   }, [formData]);
 
   useEffect(() => {
     if (result) {
-      sessionStorage.setItem(RESULT_STORAGE_KEY, JSON.stringify(result));
+      try {
+        // Strip large base64 images before persisting
+        const light = {
+          ...result,
+          mainImage: result.mainImage?.startsWith("data:") ? undefined : result.mainImage,
+          carouselImages: result.carouselImages?.filter((img: string) => !img.startsWith("data:")),
+        };
+        sessionStorage.setItem(RESULT_STORAGE_KEY, JSON.stringify(light));
+      } catch { /* quota exceeded, ignore */ }
       setStatuses(Array(6).fill("done"));
     }
   }, [result]);
