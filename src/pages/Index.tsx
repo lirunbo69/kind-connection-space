@@ -34,6 +34,15 @@ const Index = () => {
     }
 
     try {
+      // Fetch prompt templates from database
+      const { data: templates, error: tplError } = await supabase
+        .from("prompt_templates")
+        .select("template_name, template_content, model");
+
+      if (tplError) {
+        console.warn("Failed to fetch templates, using defaults:", tplError.message);
+      }
+
       const { data, error } = await supabase.functions.invoke("generate-listing", {
         body: {
           productName: formData.productName,
@@ -43,6 +52,7 @@ const Index = () => {
           language: formData.language,
           titleLimit: formData.titleLimit,
           imageCount: formData.imageCount,
+          templates: templates || [],
         },
       });
 

@@ -167,6 +167,30 @@ export type Database = {
         }
         Relationships: []
       }
+      prompt_templates: {
+        Row: {
+          created_at: string | null
+          id: string
+          model: string
+          template_content: string
+          template_name: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          model?: string
+          template_content: string
+          template_name: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          model?: string
+          template_content?: string
+          template_name?: string
+        }
+        Relationships: []
+      }
       recharge_records: {
         Row: {
           amount: number
