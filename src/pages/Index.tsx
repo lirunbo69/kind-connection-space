@@ -6,7 +6,7 @@ import CreditsBar from "@/components/CreditsBar";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-type Status = "waiting" | "running" | "done" | "error";
+type Status = "waiting" | "running" | "done";
 
 const STEP_LABELS = ["卖点分析", "标题生成", "描述生成", "主图生成", "轮播图规划", "轮播图生成"];
 
