@@ -91,6 +91,7 @@ const AdminPage = () => {
               { value: "logs", icon: FileText, label: "调用日志" },
               { value: "system", icon: Shield, label: "系统监控" },
               { value: "templates", icon: FileText, label: "模板管理" },
+              { value: "records", icon: Activity, label: "生成记录" },
             ].map(tab => (
               <TabsTrigger key={tab.value} value={tab.value}
                 className="gap-1.5 rounded-lg text-xs data-[state=active]:text-white data-[state=active]:shadow-none border-0"
