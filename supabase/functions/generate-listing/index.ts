@@ -239,7 +239,7 @@ serve(async (req) => {
     let mainImage = "";
     try {
       const imagePrompt = renderTemplate(step4.content, baseVars);
-      mainImage = await generateImage(apiKey, step4.model, imagePrompt, whiteBgImages);
+      mainImage = await generateImage(imagePrompt, whiteBgImages);
     } catch (e) {
       console.error("Main image generation failed:", e);
     }
