@@ -27,9 +27,9 @@ const AppLayout = () => {
   const location = useLocation();
   usePageTracker(location.pathname);
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex bg-mesh">
       <AppSidebar />
-      <main className={`flex-1 ${collapsed ? "ml-16" : "ml-52"} px-8 py-6 transition-all duration-200`}>
+      <main className={`flex-1 ${collapsed ? "ml-16" : "ml-52"} px-8 py-6 transition-all duration-300`}>
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/chat" element={<ChatPage />} />
@@ -66,8 +66,11 @@ const App = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+      <div className="min-h-screen flex items-center justify-center bg-mesh">
+        <div className="glass-strong rounded-2xl p-8 flex flex-col items-center gap-4">
+          <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+          <span className="text-sm text-muted-foreground">加载中...</span>
+        </div>
       </div>
     );
   }
