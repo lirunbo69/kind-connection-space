@@ -17,9 +17,10 @@ export interface ProductFormData {
 interface ProductFormProps {
   onGenerate: (data: ProductFormData) => void;
   isLoading?: boolean;
+  initialData?: ProductFormData | null;
 }
 
-const ProductForm = ({ onGenerate, isLoading }: ProductFormProps) => {
+const ProductForm = ({ onGenerate, isLoading, initialData }: ProductFormProps) => {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [uploadedFileName, setUploadedFileName] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
