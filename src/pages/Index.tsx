@@ -15,7 +15,7 @@ const RESULT_STORAGE_KEY = "listing-result-data";
 const Index = () => {
   const [statuses, setStatuses] = useState<Status[]>(Array(6).fill("waiting"));
   const [isLoading, setIsLoading] = useState(false);
-  const [result, setResult] = useState<ListingResult | null>(() => {
+  const [result, setResult] = useState<Partial<ListingResult> | null>(() => {
     try {
       const saved = sessionStorage.getItem(RESULT_STORAGE_KEY);
       return saved ? JSON.parse(saved) : null;
@@ -38,7 +38,7 @@ const Index = () => {
   }, [formData]);
 
   useEffect(() => {
-    if (result) {
+    if (result && result.title && result.description) {
       try {
         const light = {
           ...result,
@@ -47,7 +47,6 @@ const Index = () => {
         };
         sessionStorage.setItem(RESULT_STORAGE_KEY, JSON.stringify(light));
       } catch { /* quota exceeded, ignore */ }
-      setStatuses(Array(6).fill("done"));
     }
   }, [result]);
 
@@ -83,15 +82,24 @@ const Index = () => {
     setIsLoading(true);
     setResult(null);
     setStatuses(Array(6).fill("waiting"));
-    for (let i = 0; i < 6; i++) updateStep(i, "running");
 
     try {
       const { data: templates } = await supabase
         .from("prompt_templates")
         .select("template_name, template_content, model");
 
-      const { data, error } = await supabase.functions.invoke("generate-listing", {
-        body: {
+      const { data: { session } } = await supabase.auth.getSession();
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+      const response = await fetch(`${supabaseUrl}/functions/v1/generate-listing`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session?.access_token || supabaseKey}`,
+          "apikey": supabaseKey,
+        },
+        body: JSON.stringify({
           productName: fd.productName,
           productDescription: fd.productDescription,
           keywords: fd.keywords,
@@ -103,28 +111,67 @@ const Index = () => {
           whiteBgImages: fd.whiteBgImages || [],
           referenceImages: fd.referenceImages || [],
           hotSearchImages: fd.hotSearchImages || [],
-        },
+        }),
       });
 
-      if (error) throw new Error(error.message || "生成失败");
-      if (data?.error) throw new Error(data.error);
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || `生成失败 (${response.status})`);
+      }
 
-      setStatuses(Array(6).fill("done"));
-      const listingResult: ListingResult = {
-        title: data.title,
-        sellingPoints: data.sellingPoints,
-        description: data.description,
-        mainImage: data.mainImage,
-        carouselPlan: data.carouselPlan,
-        carouselImages: data.carouselImages,
-      };
-      setResult(listingResult);
-      await saveRecord(fd, listingResult);
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error("无法读取流式响应");
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let finalResult: ListingResult | null = null;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        let currentEvent = "";
+        for (const line of lines) {
+          if (line.startsWith("event: ")) {
+            currentEvent = line.slice(7).trim();
+          } else if (line.startsWith("data: ")) {
+            const dataStr = line.slice(6);
+            try {
+              const data = JSON.parse(dataStr);
+              
+              if (currentEvent === "step") {
+                updateStep(data.step, data.status);
+              } else if (currentEvent === "result") {
+                // Merge partial result
+                setResult((prev) => ({ ...(prev || {}), ...data.data }));
+              } else if (currentEvent === "done") {
+                finalResult = data as ListingResult;
+              } else if (currentEvent === "error") {
+                throw new Error(data.error);
+              }
+            } catch (parseErr) {
+              if (currentEvent === "error") throw parseErr;
+              console.warn("SSE parse warning:", parseErr);
+            }
+            currentEvent = "";
+          }
+        }
+      }
+
+      if (finalResult) {
+        setResult(finalResult);
+        setStatuses(Array(6).fill("done"));
+        await saveRecord(fd, finalResult);
+      }
       toast.success("Listing 生成完成！");
     } catch (err: any) {
       console.error("Generate error:", err);
       toast.error(err.message || "生成失败，请重试");
-      setStatuses(Array(6).fill("waiting"));
+      setStatuses((prev) => prev.map((s) => s === "running" ? "waiting" : s));
     } finally {
       setIsLoading(false);
     }
@@ -160,7 +207,7 @@ const Index = () => {
         </div>
         <div className="overflow-y-auto pl-2 scrollbar-thin space-y-6">
           <AIPipeline statuses={statuses} />
-          <GenerationResults result={result} />
+          <GenerationResults result={result as ListingResult | null} />
         </div>
       </div>
     </div>
