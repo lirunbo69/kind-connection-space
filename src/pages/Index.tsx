@@ -31,7 +31,6 @@ const Index = () => {
   useEffect(() => {
     if (formData) {
       try {
-        // Don't persist image arrays to avoid quota issues
         const { whiteBgImages, referenceImages, hotSearchImages, ...rest } = formData;
         sessionStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(rest));
       } catch { /* quota exceeded, ignore */ }
@@ -41,7 +40,6 @@ const Index = () => {
   useEffect(() => {
     if (result) {
       try {
-        // Strip large base64 images before persisting
         const light = {
           ...result,
           mainImage: result.mainImage?.startsWith("data:") ? undefined : result.mainImage,
@@ -146,7 +144,7 @@ const Index = () => {
       <div className="flex items-center justify-between px-1 pb-4 shrink-0">
         <div>
           <p className="text-sm text-muted-foreground mb-1">一款专注于美客多的listing生成器</p>
-          <h1 className="text-2xl font-bold">Listing 智能生成工作台</h1>
+          <h1 className="text-2xl font-bold text-foreground">Listing 智能生成工作台</h1>
           <p className="text-sm text-muted-foreground mt-1">填写产品信息，AI将自动完成六步生成流水线</p>
         </div>
         <CreditsBar />
@@ -157,11 +155,9 @@ const Index = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1 min-h-0 px-1 pb-4">
-        {/* Left: Product Form - independently scrollable */}
         <div className="overflow-y-auto pr-2 scrollbar-thin">
           <ProductForm onGenerate={handleGenerate} isLoading={isLoading} initialData={formData} />
         </div>
-        {/* Right: AI Pipeline + Results - independently scrollable */}
         <div className="overflow-y-auto pl-2 scrollbar-thin space-y-6">
           <AIPipeline statuses={statuses} />
           <GenerationResults result={result} />

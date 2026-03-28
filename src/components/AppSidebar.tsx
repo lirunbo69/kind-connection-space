@@ -31,8 +31,8 @@ const AppSidebar = () => {
       <NavLink
         to={path}
         end={end}
-        className={`flex items-center gap-2.5 ${collapsed ? "justify-center px-2" : "px-3"} py-2.5 rounded-lg text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-150`}
-        activeClassName="bg-primary/15 text-primary font-medium shadow-sm"
+        className={`flex items-center gap-2.5 ${collapsed ? "justify-center px-2" : "px-3"} py-2.5 rounded-xl text-sm text-sidebar-foreground hover:bg-white/60 hover:shadow-sm transition-all duration-200`}
+        activeClassName="bg-white/70 text-primary font-medium shadow-sm backdrop-blur-sm"
       >
         <Icon className="w-4 h-4 shrink-0" />
         {!collapsed && <span className="truncate">{label}</span>}
@@ -43,7 +43,7 @@ const AppSidebar = () => {
       return (
         <Tooltip delayDuration={0}>
           <TooltipTrigger asChild>{link}</TooltipTrigger>
-          <TooltipContent side="right" className="text-xs">{label}</TooltipContent>
+          <TooltipContent side="right" className="text-xs glass-strong rounded-lg">{label}</TooltipContent>
         </Tooltip>
       );
     }
@@ -51,23 +51,25 @@ const AppSidebar = () => {
   };
 
   return (
-    <aside className={`fixed left-0 top-0 bottom-0 ${collapsed ? "w-16" : "w-52"} bg-sidebar flex flex-col border-r border-sidebar-border z-20 transition-all duration-200`}>
+    <aside className={`fixed left-0 top-0 bottom-0 ${collapsed ? "w-16" : "w-52"} glass-sidebar flex flex-col z-20 transition-all duration-300`}>
       {/* Logo */}
       <div className={`flex items-center ${collapsed ? "justify-center px-2" : "gap-3 px-5"} py-5`}>
-        <img src="/logo.png" alt="秒通" className="w-9 h-9 rounded-xl shrink-0" width={36} height={36} />
+        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-amber-600 flex items-center justify-center shadow-md shadow-primary/25 shrink-0">
+          <span className="text-primary-foreground font-bold text-sm">Mt</span>
+        </div>
         {!collapsed && (
           <div>
-            <div className="font-bold text-base text-sidebar-accent-foreground tracking-wide">秒通</div>
-            <div className="text-[11px] text-sidebar-foreground/60 font-medium">ListingAI</div>
+            <div className="font-bold text-base text-foreground tracking-wide">秒通</div>
+            <div className="text-[11px] text-muted-foreground font-medium">ListingAI</div>
           </div>
         )}
       </div>
 
-      <div className="mx-4 mb-2 border-t border-sidebar-border" />
+      <div className="mx-4 mb-2 border-t border-border/40" />
 
       {!collapsed && (
         <div className="px-5 mb-1">
-          <span className="text-[10px] uppercase tracking-widest text-sidebar-foreground/40 font-semibold">工作台</span>
+          <span className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-semibold">工作台</span>
         </div>
       )}
 
@@ -81,10 +83,10 @@ const AppSidebar = () => {
       </nav>
 
       <div className="px-2 pb-3 space-y-0.5">
-        <div className="mx-1 mb-2 border-t border-sidebar-border" />
+        <div className="mx-1 mb-2 border-t border-border/40" />
         {!collapsed && (
           <div className="px-2 mb-1">
-            <span className="text-[10px] uppercase tracking-widest text-sidebar-foreground/40 font-semibold">账户</span>
+            <span className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-semibold">账户</span>
           </div>
         )}
         {bottomItems.map((item) => (
@@ -92,14 +94,14 @@ const AppSidebar = () => {
         ))}
 
         {/* User info */}
-        <div className={`flex items-center ${collapsed ? "justify-center px-1" : "gap-2.5 px-3"} py-3 mt-2 rounded-lg bg-sidebar-accent/50`}>
-          <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+        <div className={`flex items-center ${collapsed ? "justify-center px-1" : "gap-2.5 px-3"} py-3 mt-2 rounded-xl glass`}>
+          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary/20 to-accent flex items-center justify-center shrink-0">
             <Zap className="w-3.5 h-3.5 text-primary" />
           </div>
           {!collapsed && (
             <div className="flex-1 min-w-0">
-              <div className="text-xs font-medium text-sidebar-accent-foreground truncate">{isAdmin ? "管理员" : "用户"}</div>
-              <div className="text-[11px] text-sidebar-foreground/60">积分: {points ?? "—"} 💎</div>
+              <div className="text-xs font-medium text-foreground truncate">{isAdmin ? "管理员" : "用户"}</div>
+              <div className="text-[11px] text-muted-foreground">积分: {points ?? "—"} 💎</div>
             </div>
           )}
         </div>
@@ -110,7 +112,7 @@ const AppSidebar = () => {
             await supabase.auth.signOut();
             toast.success("已退出登录");
           }}
-          className={`w-full flex items-center ${collapsed ? "justify-center px-2" : "gap-2.5 px-3"} py-2.5 rounded-lg text-sm text-destructive hover:bg-destructive/10 transition-colors`}
+          className={`w-full flex items-center ${collapsed ? "justify-center px-2" : "gap-2.5 px-3"} py-2.5 rounded-xl text-sm text-destructive hover:bg-destructive/10 transition-all duration-200`}
         >
           <LogOut className="w-4 h-4 shrink-0" />
           {!collapsed && <span>退出登录</span>}
@@ -119,7 +121,7 @@ const AppSidebar = () => {
         {/* Collapse toggle */}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="w-full flex items-center justify-center py-2 mt-1 rounded-lg text-sidebar-foreground/50 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent transition-colors"
+          className="w-full flex items-center justify-center py-2 mt-1 rounded-xl text-muted-foreground hover:text-foreground hover:bg-white/50 transition-all duration-200"
         >
           {collapsed ? <ChevronsRight className="w-4 h-4" /> : <ChevronsLeft className="w-4 h-4" />}
         </button>

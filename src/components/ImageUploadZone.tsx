@@ -58,12 +58,8 @@ const ImageUploadZone = ({ label, images: imagesProp, onChange, maxImages = 10, 
   };
 
   return (
-    <div
-      onPaste={handlePaste}
-      tabIndex={0}
-      className="outline-none"
-    >
-      <label className="block text-sm font-medium mb-1.5">
+    <div onPaste={handlePaste} tabIndex={0} className="outline-none">
+      <label className="block text-sm font-medium mb-1.5 text-foreground/80">
         <span className="flex items-center gap-1.5">
           <ImageIcon className="w-4 h-4 text-primary" />
           {label}
@@ -75,11 +71,11 @@ const ImageUploadZone = ({ label, images: imagesProp, onChange, maxImages = 10, 
         <div className="grid grid-cols-4 gap-2 mb-2">
           {images.map((img, i) => (
             <div key={i} className="relative group">
-              <img src={img} alt={`${label} ${i + 1}`} className="w-full aspect-square object-cover rounded-lg border" />
+              <img src={img} alt={`${label} ${i + 1}`} className="w-full aspect-square object-cover rounded-xl border border-white/40 shadow-sm" />
               <button
                 type="button"
                 onClick={() => removeImage(i)}
-                className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
               >
                 <X className="w-3 h-3" />
               </button>
@@ -94,8 +90,8 @@ const ImageUploadZone = ({ label, images: imagesProp, onChange, maxImages = 10, 
           onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}
           onDrop={handleDrop}
-          className={`border-2 border-dashed rounded-xl p-4 flex flex-col items-center gap-1.5 text-muted-foreground cursor-pointer transition-colors ${
-            dragOver ? "border-primary bg-primary/5" : "hover:border-primary/40"
+          className={`border-2 border-dashed rounded-xl p-4 flex flex-col items-center gap-1.5 text-muted-foreground cursor-pointer transition-all duration-200 ${
+            dragOver ? "border-primary bg-primary/5 shadow-inner" : "border-border/50 hover:border-primary/40 hover:bg-white/30"
           }`}
         >
           <Upload className="w-5 h-5" />
