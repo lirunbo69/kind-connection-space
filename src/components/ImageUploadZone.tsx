@@ -9,7 +9,8 @@ interface ImageUploadZoneProps {
   maxSizeMB?: number;
 }
 
-const ImageUploadZone = ({ label, images, onChange, maxImages = 10, maxSizeMB = 5 }: ImageUploadZoneProps) => {
+const ImageUploadZone = ({ label, images: imagesProp, onChange, maxImages = 10, maxSizeMB = 5 }: ImageUploadZoneProps) => {
+  const images = imagesProp || [];
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
 
