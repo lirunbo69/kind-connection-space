@@ -28,14 +28,10 @@ const Index = () => {
     } catch { return null; }
   });
 
-  // Persist form data
   useEffect(() => {
-    if (formData) {
-      sessionStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(formData));
-    }
+    if (formData) sessionStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(formData));
   }, [formData]);
 
-  // Persist result
   useEffect(() => {
     if (result) {
       sessionStorage.setItem(RESULT_STORAGE_KEY, JSON.stringify(result));
@@ -44,11 +40,7 @@ const Index = () => {
   }, [result]);
 
   const updateStep = (step: number, status: Status) => {
-    setStatuses((prev) => {
-      const next = [...prev];
-      next[step] = status;
-      return next;
-    });
+    setStatuses((prev) => { const next = [...prev]; next[step] = status; return next; });
   };
 
   const saveRecord = async (fd: ProductFormData, res: ListingResult) => {
@@ -79,10 +71,7 @@ const Index = () => {
     setIsLoading(true);
     setResult(null);
     setStatuses(Array(6).fill("waiting"));
-
-    for (let i = 0; i < 6; i++) {
-      updateStep(i, "running");
-    }
+    for (let i = 0; i < 6; i++) updateStep(i, "running");
 
     try {
       const { data: templates } = await supabase
@@ -99,6 +88,9 @@ const Index = () => {
           titleLimit: fd.titleLimit,
           imageCount: fd.imageCount,
           templates: templates || [],
+          whiteBgImages: fd.whiteBgImages || [],
+          referenceImages: fd.referenceImages || [],
+          hotSearchImages: fd.hotSearchImages || [],
         },
       });
 
@@ -130,14 +122,14 @@ const Index = () => {
     fd: { productName: string; productDescription: string; keywords: string; market: string; language: string },
     res: ListingResult
   ) => {
-    setFormData({ ...fd, titleLimit: "", imageCount: "" } as ProductFormData);
+    setFormData({ ...fd, titleLimit: "", imageCount: "", whiteBgImages: [], referenceImages: [], hotSearchImages: [] } as ProductFormData);
     setResult(res);
     setStatuses(Array(6).fill("done"));
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="flex flex-col h-[calc(100vh-4rem)]">
+      <div className="flex items-center justify-between px-1 pb-4 shrink-0">
         <div>
           <p className="text-sm text-muted-foreground mb-1">一款专注于美客多的listing生成器</p>
           <h1 className="text-2xl font-bold">Listing 智能生成工作台</h1>
@@ -146,11 +138,17 @@ const Index = () => {
         <CreditsBar />
       </div>
 
-      <GenerationHistory onRestore={handleRestoreHistory} />
+      <div className="shrink-0 px-1 pb-4">
+        <GenerationHistory onRestore={handleRestoreHistory} />
+      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ProductForm onGenerate={handleGenerate} isLoading={isLoading} initialData={formData} />
-        <div className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1 min-h-0 px-1 pb-4">
+        {/* Left: Product Form - independently scrollable */}
+        <div className="overflow-y-auto pr-2 scrollbar-thin">
+          <ProductForm onGenerate={handleGenerate} isLoading={isLoading} initialData={formData} />
+        </div>
+        {/* Right: AI Pipeline + Results - independently scrollable */}
+        <div className="overflow-y-auto pl-2 scrollbar-thin space-y-6">
           <AIPipeline statuses={statuses} />
           <GenerationResults result={result} />
         </div>

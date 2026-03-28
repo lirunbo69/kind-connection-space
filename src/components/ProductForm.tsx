@@ -1,8 +1,9 @@
-import { useState, useRef, useEffect } from "react";
-import { FileText, Upload, Info, Loader2, X } from "lucide-react";
+import { useState, useEffect } from "react";
+import { FileText, Info, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import ImageUploadZone from "@/components/ImageUploadZone";
 
 export interface ProductFormData {
   productName: string;
@@ -12,6 +13,9 @@ export interface ProductFormData {
   language: string;
   titleLimit: string;
   imageCount: string;
+  whiteBgImages: string[];
+  referenceImages: string[];
+  hotSearchImages: string[];
 }
 
 interface ProductFormProps {
@@ -21,29 +25,6 @@ interface ProductFormProps {
 }
 
 const ProductForm = ({ onGenerate, isLoading, initialData }: ProductFormProps) => {
-  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
-  const [uploadedFileName, setUploadedFileName] = useState<string>("");
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!file.type.startsWith("image/")) return;
-    if (file.size > 5 * 1024 * 1024) return; // 5MB limit
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      setUploadedImage(ev.target?.result as string);
-      setUploadedFileName(file.name);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const removeImage = () => {
-    setUploadedImage(null);
-    setUploadedFileName("");
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  };
-
   const [formData, setFormData] = useState<ProductFormData>(
     initialData || {
       productName: "",
@@ -53,35 +34,27 @@ const ProductForm = ({ onGenerate, isLoading, initialData }: ProductFormProps) =
       language: "",
       titleLimit: "",
       imageCount: "",
+      whiteBgImages: [],
+      referenceImages: [],
+      hotSearchImages: [],
     }
   );
 
   useEffect(() => {
-    if (initialData) {
-      setFormData(initialData);
-    }
+    if (initialData) setFormData(initialData);
   }, [initialData]);
 
   const marketToLanguage: Record<string, string> = {
-    MX: "es-MX",
-    BR: "pt-BR",
-    CL: "es-CL",
-    CO: "es-CO",
-    AR: "es-AR",
-    UY: "es-UY",
+    MX: "es-MX", BR: "pt-BR", CL: "es-CL", CO: "es-CO", AR: "es-AR", UY: "es-UY",
   };
 
-  const updateField = (field: keyof ProductFormData, value: string) => {
+  const updateField = (field: keyof ProductFormData, value: any) => {
     if (field === "market") {
-      const lang = marketToLanguage[value] || "";
+      const lang = marketToLanguage[value as string] || "";
       setFormData((prev) => ({ ...prev, market: value, language: lang }));
     } else {
       setFormData((prev) => ({ ...prev, [field]: value }));
     }
-  };
-
-  const handleSubmit = () => {
-    onGenerate(formData);
   };
 
   return (
@@ -94,42 +67,23 @@ const ProductForm = ({ onGenerate, isLoading, initialData }: ProductFormProps) =
       <div className="space-y-5">
         <div>
           <label className="block text-sm font-medium mb-1.5">产品名称</label>
-          <Input
-            placeholder="例如：无线蓝牙耳机 TWS"
-            className="bg-muted/50"
-            value={formData.productName}
-            onChange={(e) => updateField("productName", e.target.value)}
-          />
+          <Input placeholder="例如：无线蓝牙耳机 TWS" className="bg-muted/50" value={formData.productName} onChange={(e) => updateField("productName", e.target.value)} />
         </div>
 
         <div>
           <label className="block text-sm font-medium mb-1.5">产品描述</label>
-          <Textarea
-            placeholder="描述产品的核心功能、材质、规格等信息..."
-            className="bg-muted/50 min-h-[100px] resize-none"
-            value={formData.productDescription}
-            onChange={(e) => updateField("productDescription", e.target.value)}
-          />
+          <Textarea placeholder="描述产品的核心功能、材质、规格等信息..." className="bg-muted/50 min-h-[100px] resize-none" value={formData.productDescription} onChange={(e) => updateField("productDescription", e.target.value)} />
         </div>
 
         <div>
           <label className="block text-sm font-medium mb-1.5">关键词</label>
-          <Input
-            placeholder="例如：auriculares bluetooth, inalámbricos"
-            className="bg-muted/50"
-            value={formData.keywords}
-            onChange={(e) => updateField("keywords", e.target.value)}
-          />
+          <Input placeholder="例如：auriculares bluetooth, inalámbricos" className="bg-muted/50" value={formData.keywords} onChange={(e) => updateField("keywords", e.target.value)} />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium mb-1.5">目标市场</label>
-            <select
-              className="w-full h-10 px-3 rounded-lg border bg-muted/50 text-sm text-foreground"
-              value={formData.market}
-              onChange={(e) => updateField("market", e.target.value)}
-            >
+            <select className="w-full h-10 px-3 rounded-lg border bg-muted/50 text-sm text-foreground" value={formData.market} onChange={(e) => updateField("market", e.target.value)}>
               <option value="">请选择市场</option>
               <option value="MX">墨西哥</option>
               <option value="BR">巴西</option>
@@ -141,11 +95,7 @@ const ProductForm = ({ onGenerate, isLoading, initialData }: ProductFormProps) =
           </div>
           <div>
             <label className="block text-sm font-medium mb-1.5">生成语言</label>
-            <select
-              className="w-full h-10 px-3 rounded-lg border bg-muted/50 text-sm text-foreground"
-              value={formData.language}
-              onChange={(e) => updateField("language", e.target.value)}
-            >
+            <select className="w-full h-10 px-3 rounded-lg border bg-muted/50 text-sm text-foreground" value={formData.language} onChange={(e) => updateField("language", e.target.value)}>
               <option value="">请选择语言</option>
               <option value="es-MX">西班牙语（墨西哥）</option>
               <option value="pt-BR">葡萄牙语（巴西）</option>
@@ -160,57 +110,35 @@ const ProductForm = ({ onGenerate, isLoading, initialData }: ProductFormProps) =
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium mb-1.5">标题字数限制</label>
-            <Input
-              placeholder="例如：60"
-              type="number"
-              className="bg-muted/50"
-              value={formData.titleLimit}
-              onChange={(e) => updateField("titleLimit", e.target.value)}
-            />
+            <Input placeholder="例如：60" type="number" className="bg-muted/50" value={formData.titleLimit} onChange={(e) => updateField("titleLimit", e.target.value)} />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1.5">图片生成数量</label>
-            <Input
-              placeholder="例如：3"
-              type="number"
-              className="bg-muted/50"
-              value={formData.imageCount}
-              onChange={(e) => updateField("imageCount", e.target.value)}
-            />
+            <Input placeholder="例如：3" type="number" className="bg-muted/50" value={formData.imageCount} onChange={(e) => updateField("imageCount", e.target.value)} />
           </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-1.5">参考图上传（可选）</label>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={handleImageUpload}
-          />
-          {uploadedImage ? (
-            <div className="relative border-2 border-primary/30 rounded-xl p-2 flex items-center gap-3 bg-muted/30">
-              <img src={uploadedImage} alt="预览" className="w-16 h-16 object-cover rounded-lg" />
-              <span className="text-sm truncate flex-1">{uploadedFileName}</span>
-              <button
-                type="button"
-                onClick={removeImage}
-                className="p-1 rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          ) : (
-            <div
-              onClick={() => fileInputRef.current?.click()}
-              className="border-2 border-dashed rounded-xl p-6 flex flex-col items-center gap-2 text-muted-foreground hover:border-primary/40 transition-colors cursor-pointer"
-            >
-              <Upload className="w-6 h-6" />
-              <span className="text-sm">点击上传参考图片（最大 5MB）</span>
-            </div>
-          )}
-        </div>
+        {/* Image Upload Zones */}
+        <ImageUploadZone
+          label="产品白底图"
+          images={formData.whiteBgImages}
+          onChange={(imgs) => updateField("whiteBgImages", imgs)}
+          maxImages={5}
+        />
+
+        <ImageUploadZone
+          label="产品参考图"
+          images={formData.referenceImages}
+          onChange={(imgs) => updateField("referenceImages", imgs)}
+          maxImages={5}
+        />
+
+        <ImageUploadZone
+          label="热搜词数据截图"
+          images={formData.hotSearchImages}
+          onChange={(imgs) => updateField("hotSearchImages", imgs)}
+          maxImages={5}
+        />
 
         <div className="flex items-center gap-2 bg-accent/60 rounded-lg px-4 py-3">
           <Info className="w-4 h-4 text-primary shrink-0" />
@@ -218,7 +146,7 @@ const ProductForm = ({ onGenerate, isLoading, initialData }: ProductFormProps) =
         </div>
 
         <Button
-          onClick={handleSubmit}
+          onClick={() => onGenerate(formData)}
           disabled={isLoading || !formData.productName || !formData.productDescription}
           className="w-full h-12 text-base font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl shadow-md"
         >
