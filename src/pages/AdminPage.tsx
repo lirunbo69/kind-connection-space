@@ -108,6 +108,7 @@ const AdminPage = () => {
             <TabsContent value="models" className="mt-0"><ModelManagement /></TabsContent>
             <TabsContent value="logs" className="mt-0"><LogsView /></TabsContent>
             <TabsContent value="system" className="mt-0"><SystemMonitorPanel /></TabsContent>
+            <TabsContent value="templates" className="mt-0"><PromptTemplatePanel /></TabsContent>
           </div>
         </Tabs>
       </div>
