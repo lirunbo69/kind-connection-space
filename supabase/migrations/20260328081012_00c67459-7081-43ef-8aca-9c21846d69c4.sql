@@ -1,0 +1,1 @@
+UPDATE prompt_templates SET model = 'google/gemini-3-pro-image-preview' WHERE id IN ('92e97e85-7990-4886-95f9-c5ea007daf7e', '46eb1423-da39-4979-a5ad-a80cfc2b83ea');
