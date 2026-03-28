@@ -11,7 +11,7 @@ const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 async function callOpenRouter(
   apiKey: string,
   model: string,
-  messages: { role: string; content: string }[],
+  messages: any[],
 ) {
   const res = await fetch(OPENROUTER_URL, {
     method: "POST",
@@ -32,8 +32,35 @@ async function callOpenRouter(
   return data.choices?.[0]?.message?.content || "";
 }
 
-async function generateImage(apiKey: string, model: string, prompt: string): Promise<string> {
-  // OpenRouter uses /v1/chat/completions with modalities for image generation
+// Call with images as multimodal content
+async function callOpenRouterWithImages(
+  apiKey: string,
+  model: string,
+  textPrompt: string,
+  imageUrls: string[],
+) {
+  const content: any[] = [{ type: "text", text: textPrompt }];
+  for (const url of imageUrls) {
+    content.push({ type: "image_url", image_url: { url } });
+  }
+
+  return callOpenRouter(apiKey, model, [{ role: "user", content }]);
+}
+
+async function generateImage(apiKey: string, model: string, prompt: string, referenceImages?: string[]): Promise<string> {
+  const messages: any[] = [];
+
+  if (referenceImages && referenceImages.length > 0) {
+    // Multimodal: text + reference images
+    const content: any[] = [{ type: "text", text: prompt }];
+    for (const img of referenceImages) {
+      content.push({ type: "image_url", image_url: { url: img } });
+    }
+    messages.push({ role: "user", content });
+  } else {
+    messages.push({ role: "user", content: prompt });
+  }
+
   const res = await fetch(OPENROUTER_URL, {
     method: "POST",
     headers: {
@@ -42,7 +69,7 @@ async function generateImage(apiKey: string, model: string, prompt: string): Pro
     },
     body: JSON.stringify({
       model: model || "black-forest-labs/flux-schnell",
-      messages: [{ role: "user", content: prompt }],
+      messages,
       modalities: ["image", "text"],
     }),
   });
@@ -55,31 +82,28 @@ async function generateImage(apiKey: string, model: string, prompt: string): Pro
 
   const data = await res.json();
   console.log("Image response structure:", JSON.stringify(data).substring(0, 500));
-  
-  // Extract image from response - OpenRouter returns images in content array
+
   const content = data.choices?.[0]?.message?.content;
-  
-  // If content is a string with markdown image, extract URL
+
   if (typeof content === "string") {
     const mdMatch = content.match(/!\[.*?\]\((https?:\/\/[^\s)]+)\)/);
     if (mdMatch) return mdMatch[1];
-    // If it's a plain URL
     if (content.startsWith("http")) return content.trim();
   }
-  
-  // If content is an array (multimodal response)
+
   if (Array.isArray(content)) {
     for (const part of content) {
-      if (part.type === "image_url" && part.image_url?.url) {
-        return part.image_url.url;
-      }
-      if (part.type === "image" && part.url) {
-        return part.url;
-      }
+      if (part.type === "image_url" && part.image_url?.url) return part.image_url.url;
+      if (part.type === "image" && part.url) return part.url;
     }
   }
 
-  // Check for image in the response data directly
+  // Check images array in message
+  const images = data.choices?.[0]?.message?.images;
+  if (Array.isArray(images) && images.length > 0) {
+    if (images[0].image_url?.url) return images[0].image_url.url;
+  }
+
   if (data.data?.[0]?.url) return data.data[0].url;
   if (data.data?.[0]?.b64_json) return `data:image/png;base64,${data.data[0].b64_json}`;
 
@@ -87,7 +111,6 @@ async function generateImage(apiKey: string, model: string, prompt: string): Pro
   return "";
 }
 
-// Replace {{var}} placeholders in template
 function renderTemplate(template: string, vars: Record<string, string>): string {
   let result = template;
   for (const [key, value] of Object.entries(vars)) {
@@ -106,7 +129,11 @@ serve(async (req) => {
     if (!apiKey) throw new Error("OPENROUTER_API_KEY is not configured");
 
     const body = await req.json();
-    const { productName, productDescription, keywords, market, language, titleLimit, imageCount, templates } = body;
+    const {
+      productName, productDescription, keywords, market, language,
+      titleLimit, imageCount, templates,
+      whiteBgImages, referenceImages, hotSearchImages,
+    } = body;
 
     if (!productName || !productDescription) {
       return new Response(
@@ -120,7 +147,6 @@ serve(async (req) => {
     const charLimit = titleLimit || "60";
     const imgCount = Math.min(Math.max(parseInt(imageCount) || 3, 1), 6);
 
-    // Build a map of templates by name
     const tplMap: Record<string, { content: string; model: string }> = {};
     if (templates && Array.isArray(templates)) {
       for (const t of templates) {
@@ -128,7 +154,10 @@ serve(async (req) => {
       }
     }
 
-    // Common variables for template rendering
+    const hasWhiteBg = Array.isArray(whiteBgImages) && whiteBgImages.length > 0;
+    const hasRef = Array.isArray(referenceImages) && referenceImages.length > 0;
+    const hasHotSearch = Array.isArray(hotSearchImages) && hotSearchImages.length > 0;
+
     const baseVars: Record<string, string> = {
       product_name: productName,
       product_description: productDescription,
@@ -137,9 +166,14 @@ serve(async (req) => {
       language: langName,
       title_limit: charLimit,
       image_count: String(imgCount),
+      has_white_bg_images: hasWhiteBg ? "是" : "否",
+      white_bg_image_count: String(whiteBgImages?.length || 0),
+      has_reference_images: hasRef ? "是" : "否",
+      reference_image_count: String(referenceImages?.length || 0),
+      has_hot_search_images: hasHotSearch ? "是" : "否",
+      hot_search_image_count: String(hotSearchImages?.length || 0),
     };
 
-    // Helper: get template or fallback
     const getTemplate = (name: string, fallbackContent: string, fallbackModel: string) => {
       const tpl = tplMap[name];
       return tpl ? { content: tpl.content, model: tpl.model } : { content: fallbackContent, model: fallbackModel };
@@ -148,15 +182,25 @@ serve(async (req) => {
     const DEFAULT_TEXT_MODEL = "google/gemini-2.5-flash";
     const DEFAULT_IMAGE_MODEL = "black-forest-labs/flux-schnell";
 
+    // Collect all user images for multimodal calls
+    const allUserImages: string[] = [
+      ...(whiteBgImages || []),
+      ...(referenceImages || []),
+      ...(hotSearchImages || []),
+    ];
+
     // ===== Step 1: 卖点分析 =====
     const step1 = getTemplate("卖点分析",
       `你是美客多（Mercado Libre）资深运营专家。请根据以下产品信息，提取5个核心卖点。每个卖点一行，不带编号，简洁有力。只输出卖点内容，不要其他文字。\n\n产品名称: {{product_name}}\n产品描述: {{product_description}}\n关键词: {{keywords}}\n目标市场: {{market}}\n输出语言: {{language}}`,
       DEFAULT_TEXT_MODEL);
     const step1Prompt = renderTemplate(step1.content, baseVars);
 
-    const sellingPointsRaw = await callOpenRouter(apiKey, step1.model, [
-      { role: "user", content: step1Prompt },
-    ]);
+    let sellingPointsRaw: string;
+    if (allUserImages.length > 0) {
+      sellingPointsRaw = await callOpenRouterWithImages(apiKey, step1.model, step1Prompt, allUserImages);
+    } else {
+      sellingPointsRaw = await callOpenRouter(apiKey, step1.model, [{ role: "user", content: step1Prompt }]);
+    }
     const sellingPoints = sellingPointsRaw
       .split("\n")
       .map((s: string) => s.replace(/^\d+[\.\)、]\s*/, "").trim())
@@ -169,9 +213,13 @@ serve(async (req) => {
     const step2 = getTemplate("标题生成",
       `你是美客多SEO标题专家。根据产品信息和卖点，生成一个SEO优化的商品标题，最多{{title_limit}}个字符。只输出标题本身，不要引号或其他文字。使用{{language}}。\n\n产品名称: {{product_name}}\n产品描述: {{product_description}}\n关键词: {{keywords}}\n目标市场: {{market}}\n\n核心卖点:\n{{selling_points}}`,
       DEFAULT_TEXT_MODEL);
-    const title = (await callOpenRouter(apiKey, step2.model, [
-      { role: "user", content: renderTemplate(step2.content, varsWithSP) },
-    ])).trim();
+
+    let title: string;
+    if (hasHotSearch) {
+      title = (await callOpenRouterWithImages(apiKey, step2.model, renderTemplate(step2.content, varsWithSP), hotSearchImages!)).trim();
+    } else {
+      title = (await callOpenRouter(apiKey, step2.model, [{ role: "user", content: renderTemplate(step2.content, varsWithSP) }])).trim();
+    }
 
     const varsWithTitle = { ...varsWithSP, title };
 
@@ -190,7 +238,7 @@ serve(async (req) => {
     let mainImage = "";
     try {
       const imagePrompt = renderTemplate(step4.content, baseVars);
-      mainImage = await generateImage(apiKey, step4.model, imagePrompt);
+      mainImage = await generateImage(apiKey, step4.model, imagePrompt, whiteBgImages);
     } catch (e) {
       console.error("Main image generation failed:", e);
     }
@@ -199,9 +247,13 @@ serve(async (req) => {
     const step5 = getTemplate("轮播图规划",
       `你是电商视觉策划专家。请为该商品规划{{image_count}}张轮播图的内容方案。每张图一行描述拍摄角度/展示重点。不带编号，只输出规划内容。\n\n产品名称: {{product_name}}\n产品描述: {{product_description}}\n关键词: {{keywords}}\n目标市场: {{market}}\n\n核心卖点:\n{{selling_points}}`,
       DEFAULT_TEXT_MODEL);
-    const carouselPlanRaw = await callOpenRouter(apiKey, step5.model, [
-      { role: "user", content: renderTemplate(step5.content, varsWithSP) },
-    ]);
+    
+    let carouselPlanRaw: string;
+    if (hasRef) {
+      carouselPlanRaw = await callOpenRouterWithImages(apiKey, step5.model, renderTemplate(step5.content, varsWithSP), referenceImages!);
+    } else {
+      carouselPlanRaw = await callOpenRouter(apiKey, step5.model, [{ role: "user", content: renderTemplate(step5.content, varsWithSP) }]);
+    }
     const carouselPlan = carouselPlanRaw
       .split("\n")
       .map((s: string) => s.replace(/^\d+[\.\)、]\s*/, "").trim())
@@ -216,7 +268,7 @@ serve(async (req) => {
     for (const plan of carouselPlan) {
       try {
         const imgPrompt = renderTemplate(step6.content, { ...baseVars, carousel_plan_item: plan });
-        const img = await generateImage(apiKey, step6.model, imgPrompt);
+        const img = await generateImage(apiKey, step6.model, imgPrompt, referenceImages);
         if (img) carouselImages.push(img);
       } catch (e) {
         console.error("Carousel image generation failed:", e);
@@ -224,14 +276,7 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({
-        sellingPoints,
-        title,
-        description,
-        mainImage,
-        carouselPlan,
-        carouselImages,
-      }),
+      JSON.stringify({ sellingPoints, title, description, mainImage, carouselPlan, carouselImages }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (e) {
