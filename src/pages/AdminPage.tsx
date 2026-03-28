@@ -17,6 +17,7 @@ import {
 import AdminUnifiedDashboard from "@/components/admin/AdminUnifiedDashboard";
 import OrderManagementPanel from "@/components/admin/OrderManagementPanel";
 import SystemMonitorPanel from "@/components/admin/SystemMonitorPanel";
+import PromptTemplatePanel from "@/components/admin/PromptTemplatePanel";
 
 type UserRow = {
   id: string;
