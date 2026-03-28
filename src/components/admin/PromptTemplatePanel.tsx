@@ -186,7 +186,7 @@ const PromptTemplatePanel = () => {
               <Label style={labelStyle}>
                 Prompt 模板内容
                 <span className="ml-2 text-xs" style={{ color: "hsl(220, 10%, 50%)" }}>
-                  支持变量: {"{{product_name}}"}, {"{{product_description}}"}, {"{{keywords}}"}, {"{{market}}"}, {"{{language}}"}, {"{{title_limit}}"}, {"{{image_count}}"}, {"{{selling_points}}"}, {"{{title}}"}, {"{{carousel_plan_item}}"}
+                  支持变量: {"{{product_name}}"}, {"{{product_description}}"}, {"{{keywords}}"}, {"{{market}}"}, {"{{language}}"}, {"{{title_limit}}"}, {"{{image_count}}"}, {"{{selling_points}}"}, {"{{title}}"}, {"{{carousel_plan_item}}"}, {"{{has_white_bg_images}}"}, {"{{white_bg_image_count}}"}, {"{{has_reference_images}}"}, {"{{reference_image_count}}"}, {"{{has_hot_search_images}}"}, {"{{hot_search_image_count}}"}
                 </span>
               </Label>
               <Textarea
