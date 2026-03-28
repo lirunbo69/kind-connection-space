@@ -7,8 +7,6 @@ const corsHeaders = {
 };
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-const TEXT_MODEL = "google/gemini-2.5-flash";
-const IMAGE_MODEL = "black-forest-labs/flux-schnell";
 
 async function callOpenRouter(
   apiKey: string,
@@ -42,7 +40,7 @@ async function generateImage(apiKey: string, prompt: string): Promise<string> {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: IMAGE_MODEL,
+      model: "black-forest-labs/flux-schnell",
       prompt,
       n: 1,
       size: "1024x1024",
@@ -59,6 +57,15 @@ async function generateImage(apiKey: string, prompt: string): Promise<string> {
   return data.data?.[0]?.url || data.data?.[0]?.b64_json || "";
 }
 
+// Replace {{var}} placeholders in template
+function renderTemplate(template: string, vars: Record<string, string>): string {
+  let result = template;
+  for (const [key, value] of Object.entries(vars)) {
+    result = result.replace(new RegExp(`\\{\\{${key}\\}\\}`, "g"), value);
+  }
+  return result;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -69,7 +76,7 @@ serve(async (req) => {
     if (!apiKey) throw new Error("OPENROUTER_API_KEY is not configured");
 
     const body = await req.json();
-    const { productName, productDescription, keywords, market, language, titleLimit, imageCount } = body;
+    const { productName, productDescription, keywords, market, language, titleLimit, imageCount, templates } = body;
 
     if (!productName || !productDescription) {
       return new Response(
@@ -78,20 +85,47 @@ serve(async (req) => {
       );
     }
 
-    const marketName = { MX: "墨西哥", BR: "巴西", CL: "智利", CO: "哥伦比亚", AR: "阿根廷", UY: "乌拉圭" }[market] || market || "墨西哥";
+    const marketName = { MX: "墨西哥", BR: "巴西", CL: "智利", CO: "哥伦比亚", AR: "阿根廷", UY: "乌拉圭" }[market as string] || market || "墨西哥";
     const langName = language || "西班牙语";
     const charLimit = titleLimit || "60";
     const imgCount = Math.min(Math.max(parseInt(imageCount) || 3, 1), 6);
 
-    const productContext = `产品名称: ${productName}\n产品描述: ${productDescription}\n关键词: ${keywords || "无"}\n目标市场: ${marketName}\n输出语言: ${langName}`;
+    // Build a map of templates by name
+    const tplMap: Record<string, { content: string; model: string }> = {};
+    if (templates && Array.isArray(templates)) {
+      for (const t of templates) {
+        tplMap[t.template_name] = { content: t.template_content, model: t.model };
+      }
+    }
+
+    // Common variables for template rendering
+    const baseVars: Record<string, string> = {
+      product_name: productName,
+      product_description: productDescription,
+      keywords: keywords || "无",
+      market: marketName,
+      language: langName,
+      title_limit: charLimit,
+      image_count: String(imgCount),
+    };
+
+    // Helper: get template or fallback
+    const getTemplate = (name: string, fallbackContent: string, fallbackModel: string) => {
+      const tpl = tplMap[name];
+      return tpl ? { content: tpl.content, model: tpl.model } : { content: fallbackContent, model: fallbackModel };
+    };
+
+    const DEFAULT_TEXT_MODEL = "google/gemini-2.5-flash";
+    const DEFAULT_IMAGE_MODEL = "black-forest-labs/flux-schnell";
 
     // ===== Step 1: 卖点分析 =====
-    const sellingPointsRaw = await callOpenRouter(apiKey, TEXT_MODEL, [
-      {
-        role: "system",
-        content: "你是美客多（Mercado Libre）资深运营专家。请根据产品信息，提取5个核心卖点。每个卖点一行，不带编号，简洁有力。只输出卖点内容，不要其他文字。",
-      },
-      { role: "user", content: productContext },
+    const step1 = getTemplate("卖点分析",
+      `你是美客多（Mercado Libre）资深运营专家。请根据以下产品信息，提取5个核心卖点。每个卖点一行，不带编号，简洁有力。只输出卖点内容，不要其他文字。\n\n产品名称: {{product_name}}\n产品描述: {{product_description}}\n关键词: {{keywords}}\n目标市场: {{market}}\n输出语言: {{language}}`,
+      DEFAULT_TEXT_MODEL);
+    const step1Prompt = renderTemplate(step1.content, baseVars);
+
+    const sellingPointsRaw = await callOpenRouter(apiKey, step1.model, [
+      { role: "user", content: step1Prompt },
     ]);
     const sellingPoints = sellingPointsRaw
       .split("\n")
@@ -99,55 +133,44 @@ serve(async (req) => {
       .filter((s: string) => s.length > 0)
       .slice(0, 5);
 
+    const varsWithSP = { ...baseVars, selling_points: sellingPoints.join("\n") };
+
     // ===== Step 2: 标题生成 =====
-    const title = (
-      await callOpenRouter(apiKey, TEXT_MODEL, [
-        {
-          role: "system",
-          content: `你是美客多SEO标题专家。根据产品信息和卖点，生成一个SEO优化的商品标题，最多${charLimit}个字符。只输出标题本身，不要引号或其他文字。使用${langName}。`,
-        },
-        {
-          role: "user",
-          content: `${productContext}\n\n核心卖点:\n${sellingPoints.join("\n")}`,
-        },
-      ])
-    ).trim();
+    const step2 = getTemplate("标题生成",
+      `你是美客多SEO标题专家。根据产品信息和卖点，生成一个SEO优化的商品标题，最多{{title_limit}}个字符。只输出标题本身，不要引号或其他文字。使用{{language}}。\n\n产品名称: {{product_name}}\n产品描述: {{product_description}}\n关键词: {{keywords}}\n目标市场: {{market}}\n\n核心卖点:\n{{selling_points}}`,
+      DEFAULT_TEXT_MODEL);
+    const title = (await callOpenRouter(apiKey, step2.model, [
+      { role: "user", content: renderTemplate(step2.content, varsWithSP) },
+    ])).trim();
+
+    const varsWithTitle = { ...varsWithSP, title };
 
     // ===== Step 3: 描述生成 =====
-    const description = (
-      await callOpenRouter(apiKey, TEXT_MODEL, [
-        {
-          role: "system",
-          content: `你是美客多商品描述文案专家。根据产品信息和卖点，撰写300-500字的详细商品描述。要求有吸引力、包含规格参数、解答买家常见疑虑。使用${langName}，段落清晰。只输出描述正文。`,
-        },
-        {
-          role: "user",
-          content: `${productContext}\n\n核心卖点:\n${sellingPoints.join("\n")}\n标题: ${title}`,
-        },
-      ])
-    ).trim();
+    const step3 = getTemplate("描述生成",
+      `你是美客多商品描述文案专家。根据产品信息和卖点，撰写300-500字的详细商品描述。要求有吸引力、包含规格参数、解答买家常见疑虑。使用{{language}}，段落清晰。只输出描述正文。\n\n产品名称: {{product_name}}\n产品描述: {{product_description}}\n关键词: {{keywords}}\n目标市场: {{market}}\n\n核心卖点:\n{{selling_points}}\n标题: {{title}}`,
+      DEFAULT_TEXT_MODEL);
+    const description = (await callOpenRouter(apiKey, step3.model, [
+      { role: "user", content: renderTemplate(step3.content, varsWithTitle) },
+    ])).trim();
 
     // ===== Step 4: 主图生成 =====
+    const step4 = getTemplate("主图生成",
+      `Professional e-commerce product photo of {{product_name}}, {{product_description}}, white background, studio lighting, high quality, 4k`,
+      DEFAULT_IMAGE_MODEL);
     let mainImage = "";
     try {
-      mainImage = await generateImage(
-        apiKey,
-        `Professional e-commerce product photo of ${productName}, ${productDescription}, white background, studio lighting, high quality, 4k`,
-      );
+      const imagePrompt = renderTemplate(step4.content, baseVars);
+      mainImage = await generateImage(apiKey, imagePrompt);
     } catch (e) {
       console.error("Main image generation failed:", e);
     }
 
     // ===== Step 5: 轮播图规划 =====
-    const carouselPlanRaw = await callOpenRouter(apiKey, TEXT_MODEL, [
-      {
-        role: "system",
-        content: `你是电商视觉策划专家。请为该商品规划${imgCount}张轮播图的内容方案。每张图一行描述拍摄角度/展示重点。不带编号，只输出规划内容。`,
-      },
-      {
-        role: "user",
-        content: `${productContext}\n\n核心卖点:\n${sellingPoints.join("\n")}`,
-      },
+    const step5 = getTemplate("轮播图规划",
+      `你是电商视觉策划专家。请为该商品规划{{image_count}}张轮播图的内容方案。每张图一行描述拍摄角度/展示重点。不带编号，只输出规划内容。\n\n产品名称: {{product_name}}\n产品描述: {{product_description}}\n关键词: {{keywords}}\n目标市场: {{market}}\n\n核心卖点:\n{{selling_points}}`,
+      DEFAULT_TEXT_MODEL);
+    const carouselPlanRaw = await callOpenRouter(apiKey, step5.model, [
+      { role: "user", content: renderTemplate(step5.content, varsWithSP) },
     ]);
     const carouselPlan = carouselPlanRaw
       .split("\n")
@@ -156,13 +179,14 @@ serve(async (req) => {
       .slice(0, imgCount);
 
     // ===== Step 6: 轮播图生成 =====
+    const step6 = getTemplate("轮播图生成",
+      `Professional e-commerce product photo: {{carousel_plan_item}}. Product: {{product_name}}. Clean background, studio lighting, high quality`,
+      DEFAULT_IMAGE_MODEL);
     const carouselImages: string[] = [];
     for (const plan of carouselPlan) {
       try {
-        const img = await generateImage(
-          apiKey,
-          `Professional e-commerce product photo: ${plan}. Product: ${productName}. Clean background, studio lighting, high quality`,
-        );
+        const imgPrompt = renderTemplate(step6.content, { ...baseVars, carousel_plan_item: plan });
+        const img = await generateImage(apiKey, imgPrompt);
         if (img) carouselImages.push(img);
       } catch (e) {
         console.error("Carousel image generation failed:", e);
