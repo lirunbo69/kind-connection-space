@@ -5,6 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
@@ -12,6 +15,30 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Plus, Edit2, Trash2, Eye } from "lucide-react";
+
+const OPENROUTER_MODELS = [
+  { value: "google/gemini-2.5-pro", label: "Gemini 2.5 Pro" },
+  { value: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash" },
+  { value: "google/gemini-2.5-flash-lite", label: "Gemini 2.5 Flash Lite" },
+  { value: "google/gemini-3.1-pro-preview", label: "Gemini 3.1 Pro Preview" },
+  { value: "google/gemini-3-flash-preview", label: "Gemini 3 Flash Preview" },
+  { value: "google/gemini-3-pro-image-preview", label: "Gemini 3 Pro Image" },
+  { value: "google/gemini-3.1-flash-image-preview", label: "Gemini 3.1 Flash Image" },
+  { value: "openai/gpt-4o", label: "GPT-4o" },
+  { value: "openai/gpt-4o-mini", label: "GPT-4o Mini" },
+  { value: "openai/gpt-4.1", label: "GPT-4.1" },
+  { value: "openai/gpt-4.1-mini", label: "GPT-4.1 Mini" },
+  { value: "openai/gpt-4.1-nano", label: "GPT-4.1 Nano" },
+  { value: "anthropic/claude-sonnet-4", label: "Claude Sonnet 4" },
+  { value: "anthropic/claude-3.5-sonnet", label: "Claude 3.5 Sonnet" },
+  { value: "anthropic/claude-3.5-haiku", label: "Claude 3.5 Haiku" },
+  { value: "meta-llama/llama-4-maverick", label: "Llama 4 Maverick" },
+  { value: "meta-llama/llama-4-scout", label: "Llama 4 Scout" },
+  { value: "deepseek/deepseek-r1", label: "DeepSeek R1" },
+  { value: "deepseek/deepseek-chat-v3-0324", label: "DeepSeek V3" },
+  { value: "black-forest-labs/flux-schnell", label: "Flux Schnell (图片)" },
+  { value: "black-forest-labs/flux-1.1-pro", label: "Flux 1.1 Pro (图片)" },
+];
 
 type PromptTemplate = {
   id: string;
@@ -140,12 +167,19 @@ const PromptTemplatePanel = () => {
               </div>
               <div className="space-y-2">
                 <Label style={labelStyle}>AI 模型</Label>
-                <Input
-                  value={form.model}
-                  onChange={e => setForm({ ...form, model: e.target.value })}
-                  placeholder="google/gemini-2.5-flash"
-                  style={inputStyle}
-                />
+                <Select value={form.model} onValueChange={v => setForm({ ...form, model: v })}>
+                  <SelectTrigger style={inputStyle} className="w-full">
+                    <SelectValue placeholder="选择模型" />
+                  </SelectTrigger>
+                  <SelectContent style={{ background: "hsl(220, 15%, 15%)", border: "1px solid hsl(220, 15%, 22%)" }}>
+                    {OPENROUTER_MODELS.map(m => (
+                      <SelectItem key={m.value} value={m.value} style={{ color: "#fff" }} className="focus:bg-[hsl(220,15%,22%)] focus:text-white">
+                        <span className="font-medium">{m.label}</span>
+                        <span className="ml-2 text-xs opacity-50">{m.value}</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <div className="space-y-2">
