@@ -32,18 +32,18 @@ async function callOpenRouter(
   return data.choices?.[0]?.message?.content || "";
 }
 
-async function generateImage(apiKey: string, prompt: string): Promise<string> {
-  const res = await fetch("https://openrouter.ai/api/v1/images/generations", {
+async function generateImage(apiKey: string, model: string, prompt: string): Promise<string> {
+  // OpenRouter uses /v1/chat/completions with modalities for image generation
+  const res = await fetch(OPENROUTER_URL, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "black-forest-labs/flux-schnell",
-      prompt,
-      n: 1,
-      size: "1024x1024",
+      model: model || "black-forest-labs/flux-schnell",
+      messages: [{ role: "user", content: prompt }],
+      modalities: ["image", "text"],
     }),
   });
 
@@ -54,7 +54,37 @@ async function generateImage(apiKey: string, prompt: string): Promise<string> {
   }
 
   const data = await res.json();
-  return data.data?.[0]?.url || data.data?.[0]?.b64_json || "";
+  console.log("Image response structure:", JSON.stringify(data).substring(0, 500));
+  
+  // Extract image from response - OpenRouter returns images in content array
+  const content = data.choices?.[0]?.message?.content;
+  
+  // If content is a string with markdown image, extract URL
+  if (typeof content === "string") {
+    const mdMatch = content.match(/!\[.*?\]\((https?:\/\/[^\s)]+)\)/);
+    if (mdMatch) return mdMatch[1];
+    // If it's a plain URL
+    if (content.startsWith("http")) return content.trim();
+  }
+  
+  // If content is an array (multimodal response)
+  if (Array.isArray(content)) {
+    for (const part of content) {
+      if (part.type === "image_url" && part.image_url?.url) {
+        return part.image_url.url;
+      }
+      if (part.type === "image" && part.url) {
+        return part.url;
+      }
+    }
+  }
+
+  // Check for image in the response data directly
+  if (data.data?.[0]?.url) return data.data[0].url;
+  if (data.data?.[0]?.b64_json) return `data:image/png;base64,${data.data[0].b64_json}`;
+
+  console.error("Could not extract image from response:", JSON.stringify(data).substring(0, 1000));
+  return "";
 }
 
 // Replace {{var}} placeholders in template
@@ -160,7 +190,7 @@ serve(async (req) => {
     let mainImage = "";
     try {
       const imagePrompt = renderTemplate(step4.content, baseVars);
-      mainImage = await generateImage(apiKey, imagePrompt);
+      mainImage = await generateImage(apiKey, step4.model, imagePrompt);
     } catch (e) {
       console.error("Main image generation failed:", e);
     }
@@ -186,7 +216,7 @@ serve(async (req) => {
     for (const plan of carouselPlan) {
       try {
         const imgPrompt = renderTemplate(step6.content, { ...baseVars, carousel_plan_item: plan });
-        const img = await generateImage(apiKey, imgPrompt);
+        const img = await generateImage(apiKey, step6.model, imgPrompt);
         if (img) carouselImages.push(img);
       } catch (e) {
         console.error("Carousel image generation failed:", e);
