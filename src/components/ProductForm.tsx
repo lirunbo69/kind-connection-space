@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { FileText, Upload, Info, Loader2, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,9 +17,10 @@ export interface ProductFormData {
 interface ProductFormProps {
   onGenerate: (data: ProductFormData) => void;
   isLoading?: boolean;
+  initialData?: ProductFormData | null;
 }
 
-const ProductForm = ({ onGenerate, isLoading }: ProductFormProps) => {
+const ProductForm = ({ onGenerate, isLoading, initialData }: ProductFormProps) => {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [uploadedFileName, setUploadedFileName] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -43,15 +44,23 @@ const ProductForm = ({ onGenerate, isLoading }: ProductFormProps) => {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const [formData, setFormData] = useState<ProductFormData>({
-    productName: "",
-    productDescription: "",
-    keywords: "",
-    market: "",
-    language: "",
-    titleLimit: "",
-    imageCount: "",
-  });
+  const [formData, setFormData] = useState<ProductFormData>(
+    initialData || {
+      productName: "",
+      productDescription: "",
+      keywords: "",
+      market: "",
+      language: "",
+      titleLimit: "",
+      imageCount: "",
+    }
+  );
+
+  useEffect(() => {
+    if (initialData) {
+      setFormData(initialData);
+    }
+  }, [initialData]);
 
   const marketToLanguage: Record<string, string> = {
     MX: "es-MX",

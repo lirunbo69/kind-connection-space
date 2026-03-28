@@ -83,6 +83,57 @@ export type Database = {
         }
         Relationships: []
       }
+      generation_records: {
+        Row: {
+          carousel_images: Json | null
+          carousel_plan: Json | null
+          created_at: string | null
+          description: string | null
+          id: string
+          keywords: string | null
+          language: string | null
+          main_image: string | null
+          market: string | null
+          product_description: string
+          product_name: string
+          selling_points: Json | null
+          title: string | null
+          user_id: string
+        }
+        Insert: {
+          carousel_images?: Json | null
+          carousel_plan?: Json | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          keywords?: string | null
+          language?: string | null
+          main_image?: string | null
+          market?: string | null
+          product_description: string
+          product_name: string
+          selling_points?: Json | null
+          title?: string | null
+          user_id: string
+        }
+        Update: {
+          carousel_images?: Json | null
+          carousel_plan?: Json | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          keywords?: string | null
+          language?: string | null
+          main_image?: string | null
+          market?: string | null
+          product_description?: string
+          product_name?: string
+          selling_points?: Json | null
+          title?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       page_views: {
         Row: {
           created_at: string
