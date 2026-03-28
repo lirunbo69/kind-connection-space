@@ -44,15 +44,23 @@ const ProductForm = ({ onGenerate, isLoading, initialData }: ProductFormProps) =
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const [formData, setFormData] = useState<ProductFormData>({
-    productName: "",
-    productDescription: "",
-    keywords: "",
-    market: "",
-    language: "",
-    titleLimit: "",
-    imageCount: "",
-  });
+  const [formData, setFormData] = useState<ProductFormData>(
+    initialData || {
+      productName: "",
+      productDescription: "",
+      keywords: "",
+      market: "",
+      language: "",
+      titleLimit: "",
+      imageCount: "",
+    }
+  );
+
+  useEffect(() => {
+    if (initialData) {
+      setFormData(initialData);
+    }
+  }, [initialData]);
 
   const marketToLanguage: Record<string, string> = {
     MX: "es-MX",
