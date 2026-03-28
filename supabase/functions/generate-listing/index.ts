@@ -269,7 +269,7 @@ serve(async (req) => {
     for (const plan of carouselPlan) {
       try {
         const imgPrompt = renderTemplate(step6.content, { ...baseVars, carousel_plan_item: plan });
-        const img = await generateImage(apiKey, step6.model, imgPrompt, referenceImages);
+        const img = await generateImage(imgPrompt, referenceImages);
         if (img) carouselImages.push(img);
       } catch (e) {
         console.error("Carousel image generation failed:", e);
