@@ -228,8 +228,8 @@ const CarouselGallery = ({
 );
 
 const GenerationResults = ({ result }: { result: ListingResult | null }) => {
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const hasResult = !!result;
-  // Support both mainImages array and legacy mainImage string
   const allMainImages = result?.mainImages?.length
     ? result.mainImages
     : result?.mainImage
@@ -238,37 +238,51 @@ const GenerationResults = ({ result }: { result: ListingResult | null }) => {
   const hasAnyImage = allMainImages.length > 0 || (result?.carouselImages && result.carouselImages.length > 0);
 
   return (
-    <div className="glass-strong rounded-2xl p-6 animate-glass-reveal" style={{ animationDelay: "0.2s" }}>
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-2.5">
-          {hasResult ? (
-            <CheckCircle className="w-5 h-5 text-emerald-500" />
-          ) : (
-            <Clock className="w-5 h-5 text-muted-foreground" />
+    <>
+      <Dialog open={!!lightboxUrl} onOpenChange={(open) => !open && setLightboxUrl(null)}>
+        <DialogContent className="max-w-[90vw] max-h-[90vh] p-2 bg-black/90 border-none flex items-center justify-center">
+          {lightboxUrl && (
+            <img
+              src={lightboxUrl}
+              alt="放大预览"
+              className="max-w-full max-h-[85vh] object-contain rounded-lg"
+            />
           )}
-          <h2 className="text-lg font-semibold text-foreground">生成结果</h2>
-        </div>
-        {hasAnyImage && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-xs gap-1 h-8 rounded-lg"
-            onClick={() => downloadAllImages(undefined, [...allMainImages, ...(result?.carouselImages || [])])}
-          >
-            <Download className="w-3.5 h-3.5" />
-            批量下载全部图片
-          </Button>
-        )}
-      </div>
+        </DialogContent>
+      </Dialog>
 
-      <div className="space-y-5">
-        <ResultSection label="核心卖点" content={result?.sellingPoints?.map((p, i) => `${i + 1}. ${p}`).join("\n")} placeholder="卖点将在此处显示..." copyable />
-        <ResultSection label="生成标题" content={result?.title} placeholder="标题将在此处显示..." copyable />
-        <ResultSection label="商品描述" content={result?.description} placeholder="描述将在此处显示..." copyable />
-        <MainImageGallery images={allMainImages.length > 0 ? allMainImages : undefined} />
-        <CarouselGallery plan={result?.carouselPlan} images={result?.carouselImages} />
+      <div className="glass-strong rounded-2xl p-6 animate-glass-reveal" style={{ animationDelay: "0.2s" }}>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2.5">
+            {hasResult ? (
+              <CheckCircle className="w-5 h-5 text-emerald-500" />
+            ) : (
+              <Clock className="w-5 h-5 text-muted-foreground" />
+            )}
+            <h2 className="text-lg font-semibold text-foreground">生成结果</h2>
+          </div>
+          {hasAnyImage && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-xs gap-1 h-8 rounded-lg"
+              onClick={() => downloadAllImages(undefined, [...allMainImages, ...(result?.carouselImages || [])])}
+            >
+              <Download className="w-3.5 h-3.5" />
+              批量下载全部图片
+            </Button>
+          )}
+        </div>
+
+        <div className="space-y-5">
+          <ResultSection label="核心卖点" content={result?.sellingPoints?.map((p, i) => `${i + 1}. ${p}`).join("\n")} placeholder="卖点将在此处显示..." copyable />
+          <ResultSection label="生成标题" content={result?.title} placeholder="标题将在此处显示..." copyable />
+          <ResultSection label="商品描述" content={result?.description} placeholder="描述将在此处显示..." copyable />
+          <MainImageGallery images={allMainImages.length > 0 ? allMainImages : undefined} onImageClick={setLightboxUrl} />
+          <CarouselGallery plan={result?.carouselPlan} images={result?.carouselImages} onImageClick={setLightboxUrl} />
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 
