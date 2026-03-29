@@ -399,14 +399,19 @@ serve(async (req) => {
             `Generate a professional e-commerce product photo of {{product_name}}. {{product_description}}. Pure white background, studio lighting, product centered, high quality, 4k resolution. Image aspect ratio: {{image_size_desc}}. Output the image directly.`,
             DEFAULT_IMAGE_MODEL);
           let mainImage = "";
-          // Build Step 4 specific vars - include product info for main image context
           const step4Vars = { ...baseVars, carousel_plan_item: `Main hero product photo of ${productName}` };
+          const genId = crypto.randomUUID().substring(0, 8);
           try {
             const step4Prompt = renderTemplate(step4.content, step4Vars);
             console.log(`[Step 4] Rendered prompt (${step4Prompt.length} chars): ${step4Prompt.substring(0, 150)}...`);
             const step4Data = await callOpenRouter(apiKey, step4.model, step4Prompt, whiteBgImages);
-            mainImage = extractImage(step4Data);
-            if (!mainImage) {
+            const rawImage = extractImage(step4Data);
+            if (rawImage && rawImage.startsWith("data:")) {
+              mainImage = await uploadImageToStorage(adminClient, user.id, rawImage, `main-${genId}`);
+              console.log(`[Step 4] Image uploaded, URL length: ${mainImage.length}`);
+            } else if (rawImage) {
+              mainImage = rawImage; // already a URL
+            } else {
               console.warn("[Step 4] No image extracted from response.");
             }
           } catch (e) {
