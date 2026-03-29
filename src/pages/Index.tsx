@@ -180,9 +180,14 @@ const Index = () => {
       }
 
       if (finalResult) {
-        setResult(finalResult);
+        // Don't setResult here - partial results already accumulated via "result" events
         setStatuses(Array(6).fill("done"));
-        await saveRecord(fd, finalResult);
+        // Save record using the accumulated result
+        setResult((prev) => {
+          const final = prev as ListingResult;
+          if (final) saveRecord(fd, final);
+          return prev;
+        });
       }
       toast.success("Listing 生成完成！");
     } catch (err: any) {
