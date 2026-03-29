@@ -481,8 +481,8 @@ serve(async (req) => {
             points_cost: totalCost,
           });
 
-          // Send done event WITHOUT base64 images (already sent via result events) to avoid huge JSON payload
-          send("done", { sellingPoints, title, description, mainImage: mainImage ? "[sent]" : "", carouselPlan, carouselImages: carouselImages.map(() => "[sent]"), pointsUsed: totalCost, remainingPoints: newPoints });
+          // Images are now URLs (not base64), safe to include in done event
+          send("done", { sellingPoints, title, description, mainImage, carouselPlan, carouselImages, pointsUsed: totalCost, remainingPoints: newPoints });
           console.log(`[Done] sellingPoints=${sellingPoints.length}, title=${title.length}, desc=${description.length}, mainImage=${mainImage ? 'yes' : 'no'}, carousel=${carouselImages.length}, cost=${totalCost}`);
         } catch (e) {
           console.error("generate-listing stream error:", e);
