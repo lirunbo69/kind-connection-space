@@ -443,12 +443,18 @@ serve(async (req) => {
             `Generate a professional e-commerce product photo: {{carousel_plan_item}}. Product: {{product_name}}. Clean white background, studio lighting, product centered, high quality. Image aspect ratio: {{image_size_desc}}. Output the image directly.`,
             DEFAULT_IMAGE_MODEL);
           const carouselImages: string[] = [];
-          for (const plan of carouselPlan) {
+          for (let ci = 0; ci < carouselPlan.length; ci++) {
+            const plan = carouselPlan[ci];
             try {
               const imgPrompt = renderTemplate(step6.content, { ...baseVars, carousel_plan_item: plan });
               const step6Data = await callOpenRouter(apiKey, step6.model, imgPrompt, referenceImages);
-              const img = extractImage(step6Data);
-              if (img) carouselImages.push(img);
+              const rawImg = extractImage(step6Data);
+              if (rawImg && rawImg.startsWith("data:")) {
+                const imgUrl = await uploadImageToStorage(adminClient, user.id, rawImg, `carousel-${genId}-${ci}`);
+                carouselImages.push(imgUrl);
+              } else if (rawImg) {
+                carouselImages.push(rawImg);
+              }
             } catch (e) {
               console.error("[Step 6] Carousel image generation failed:", e);
             }
