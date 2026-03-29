@@ -19,6 +19,7 @@ const CompetitorPage = lazy(() => import("./pages/CompetitorPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const ChatPage = lazy(() => import("./pages/ChatPage"));
 const AdminPage = lazy(() => import("./pages/AdminPage"));
+
 const TopupPage = lazy(() => import("./pages/TopupPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -39,7 +40,7 @@ const AppLayout = () => {
           <Route path="/analysis" element={<CompetitorPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/topup" element={<TopupPage />} />
-          <Route path="/admin" element={<AdminPage />} />
+          
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
@@ -78,6 +79,7 @@ const App = () => {
   }
 
   const isResetPassword = window.location.pathname === "/reset-password";
+  const isAdminRoute = window.location.pathname === "/admin";
 
   const handleNavigateAuth = (tab?: string) => {
     if (tab) setDefaultAuthTab(tab);
@@ -89,7 +91,11 @@ const App = () => {
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        {isResetPassword ? (
+        {isAdminRoute ? (
+          <Suspense fallback={<div className="min-h-screen flex items-center justify-center" style={{ background: "hsl(225, 20%, 5%)" }}><div className="animate-spin w-8 h-8 border-2 rounded-full" style={{ borderColor: "hsl(195, 100%, 50%)", borderTopColor: "transparent" }} /></div>}>
+            <AdminPage />
+          </Suspense>
+        ) : isResetPassword ? (
           <ResetPasswordPage />
         ) : session ? (
           <BrowserRouter>
