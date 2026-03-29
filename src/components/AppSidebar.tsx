@@ -23,7 +23,7 @@ const bottomItems = [
 
 const AppSidebar = () => {
   const { collapsed, setCollapsed } = useSidebarCollapsed();
-  const { isAdmin } = useIsAdmin();
+  
   const { points } = useUserPoints();
 
   const NavItem = ({ icon: Icon, label, path, end }: { icon: any; label: string; path: string; end?: boolean }) => {
