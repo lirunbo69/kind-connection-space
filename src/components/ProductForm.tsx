@@ -12,7 +12,8 @@ export interface ProductFormData {
   market: string;
   language: string;
   titleLimit: string;
-  imageCount: string;
+  mainImageCount: string;
+  carouselImageCount: string;
   aspectRatio: string;
   whiteBgImages: string[];
   referenceImages: string[];
