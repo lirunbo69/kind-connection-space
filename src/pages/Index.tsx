@@ -160,9 +160,13 @@ const Index = () => {
                 updateStep(data.step, data.status);
               } else if (currentEvent === "result") {
                 // Merge partial result
+                console.log(`[SSE result] step=${data.step}, keys=${Object.keys(data.data || {}).join(",")}, mainImage=${data.data?.mainImage ? `${data.data.mainImage.substring(0, 30)}...(${data.data.mainImage.length} chars)` : "none"}`);
                 setResult((prev) => ({ ...(prev || {}), ...data.data }));
               } else if (currentEvent === "done") {
-                finalResult = data as ListingResult;
+                // Don't overwrite result - images were already sent via result events
+                // The done event only has placeholder "[sent]" for images
+                console.log("[SSE done] Generation complete");
+                finalResult = {} as ListingResult; // Just mark as done
               } else if (currentEvent === "error") {
                 throw new Error(data.error);
               }
