@@ -40,7 +40,7 @@ const AppLayout = () => {
           <Route path="/analysis" element={<CompetitorPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/topup" element={<TopupPage />} />
-          <Route path="/admin" element={<AdminPage />} />
+          
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
