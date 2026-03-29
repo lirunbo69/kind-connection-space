@@ -369,7 +369,7 @@ serve(async (req) => {
           send("step", { step: 5, status: "running" });
           console.log("[Step 6] 轮播图生成");
           const step6 = getTemplate("轮播图生成",
-            `Generate a professional e-commerce product photo: {{carousel_plan_item}}. Product: {{product_name}}. Clean background, studio lighting, high quality. Output the image directly.`,
+            `Generate a professional e-commerce product photo: {{carousel_plan_item}}. Product: {{product_name}}. Clean white background, studio lighting, product centered, high quality. Image aspect ratio: {{image_size_desc}}. Output the image directly.`,
             DEFAULT_IMAGE_MODEL);
           const carouselImages: string[] = [];
           for (const plan of carouselPlan) {
