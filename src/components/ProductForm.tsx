@@ -184,7 +184,9 @@ const ProductForm = ({ onGenerate, isLoading, initialData }: ProductFormProps) =
 
         <div className="flex items-center gap-2 glass rounded-xl px-4 py-3">
           <Info className="w-4 h-4 text-primary shrink-0" />
-          <span className="text-sm text-muted-foreground">文本生成消耗10积分，每张图片消耗20积分</span>
+          <span className="text-sm text-muted-foreground">
+            文本生成消耗10积分，每张图片消耗20积分 · 预计消耗 {10 + 20 * ((parseInt(formData.mainImageCount) || 1) + (parseInt(formData.carouselImageCount) || 3))} 积分
+          </span>
         </div>
 
         <Button
