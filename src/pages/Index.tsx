@@ -1,15 +1,8 @@
 import { useState, useEffect } from "react";
 import ProductForm, { type ProductFormData } from "@/components/ProductForm";
 import AIPipeline from "@/components/AIPipeline";
-export interface ListingResult {
-  title: string;
-  sellingPoints: string[];
-  description: string;
-  mainImages?: string[];
-  mainImage?: string; // legacy single image compat
-  carouselPlan?: string[];
-  carouselImages?: string[];
-}
+import GenerationResults from "@/components/GenerationResults";
+import type { ListingResult } from "@/components/GenerationResults";
 import GenerationHistory from "@/components/GenerationHistory";
 import CreditsBar from "@/components/CreditsBar";
 import { supabase } from "@/integrations/supabase/client";
