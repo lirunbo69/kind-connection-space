@@ -13,6 +13,7 @@ export interface ProductFormData {
   language: string;
   titleLimit: string;
   imageCount: string;
+  aspectRatio: string;
   whiteBgImages: string[];
   referenceImages: string[];
   hotSearchImages: string[];
