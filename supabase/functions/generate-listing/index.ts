@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { decode as decodeBase64 } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,6 +12,54 @@ const ESTIMATED_TEXT_COST = 10;
 const ESTIMATED_IMAGE_COST = 20;
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
+
+// Upload base64 image to Supabase Storage and return public URL
+async function uploadImageToStorage(
+  adminClient: any,
+  userId: string,
+  base64DataUrl: string,
+  fileName: string,
+): Promise<string> {
+  try {
+    // Extract mime type and base64 data
+    const match = base64DataUrl.match(/^data:(image\/\w+);base64,(.+)$/s);
+    if (!match) {
+      console.error("[uploadImage] Invalid base64 data URL format");
+      return base64DataUrl; // fallback to base64
+    }
+    const mimeType = match[1];
+    const base64Data = match[2];
+    const ext = mimeType.split("/")[1] || "png";
+    const filePath = `${userId}/${fileName}.${ext}`;
+
+    // Decode base64 to Uint8Array
+    const imageBytes = decodeBase64(base64Data);
+
+    // Upload to storage
+    const { data, error } = await adminClient.storage
+      .from("listing-images")
+      .upload(filePath, imageBytes, {
+        contentType: mimeType,
+        upsert: true,
+      });
+
+    if (error) {
+      console.error("[uploadImage] Upload error:", error.message);
+      return base64DataUrl; // fallback
+    }
+
+    // Get public URL
+    const { data: urlData } = adminClient.storage
+      .from("listing-images")
+      .getPublicUrl(filePath);
+
+    console.log(`[uploadImage] Uploaded ${filePath}, URL: ${urlData.publicUrl?.substring(0, 80)}...`);
+    return urlData.publicUrl;
+  } catch (e) {
+    console.error("[uploadImage] Exception:", e);
+    return base64DataUrl; // fallback
+  }
+}
 
 // Models that support image output
 const IMAGE_OUTPUT_MODELS = [
