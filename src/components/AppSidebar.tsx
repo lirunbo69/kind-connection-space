@@ -97,7 +97,7 @@ const AppSidebar = () => {
           </div>
           {!collapsed && (
             <div className="flex-1 min-w-0">
-              <div className="text-xs font-medium text-foreground truncate">{isAdmin ? "管理员" : "用户"}</div>
+              <div className="text-xs font-medium text-foreground truncate">用户</div>
               <div className="text-[11px] text-muted-foreground">积分: {points ?? "—"} 💎</div>
             </div>
           )}
