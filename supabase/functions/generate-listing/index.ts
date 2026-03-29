@@ -85,18 +85,49 @@ function extractText(data: any): string {
 function extractImage(data: any): string {
   const msg = data.choices?.[0]?.message;
   if (!msg) return "";
+
+  // Debug: log the actual structure of images array
+  if (Array.isArray(msg.images) && msg.images.length > 0) {
+    console.log(`[extractImage] images[0] keys: ${JSON.stringify(Object.keys(msg.images[0]))}`);
+    console.log(`[extractImage] images[0] sample: ${JSON.stringify(msg.images[0]).substring(0, 200)}`);
+  }
+
+  // Try msg.images array - handle ALL known formats
   if (Array.isArray(msg.images)) {
     for (const img of msg.images) {
+      // Format: { image_url: { url: "data:..." } }
       if (img.image_url?.url) return img.image_url.url;
+      // Format: { url: "data:..." }
+      if (img.url) return img.url;
+      // Format: { b64_json: "..." } (OpenAI style)
+      if (img.b64_json) return `data:image/png;base64,${img.b64_json}`;
+      // Format: raw base64 string
+      if (typeof img === "string") {
+        if (img.startsWith("data:")) return img;
+        if (img.length > 100) return `data:image/png;base64,${img}`;
+      }
+      // Format: { data: "base64..." }
+      if (img.data) {
+        const mime = img.mime_type || img.mimeType || "image/png";
+        return `data:${mime};base64,${img.data}`;
+      }
     }
   }
+
+  // Try content parts
   const content = msg.content;
   if (Array.isArray(content)) {
+    console.log(`[extractImage] content parts: ${JSON.stringify(content.map((p: any) => ({ type: p.type, hasUrl: !!p.image_url?.url, hasData: !!p.data })))}`);
     for (const part of content) {
       if (part.type === "image_url" && part.image_url?.url) return part.image_url.url;
       if (part.type === "inline_data" && part.data) {
         const mime = part.mime_type || "image/png";
         return `data:${mime};base64,${part.data}`;
+      }
+      // Gemini native format
+      if (part.type === "image" && part.source?.data) {
+        const mime = part.source.media_type || "image/png";
+        return `data:${mime};base64,${part.source.data}`;
       }
     }
     for (const part of content) {
