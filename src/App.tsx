@@ -19,6 +19,7 @@ const CompetitorPage = lazy(() => import("./pages/CompetitorPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const ChatPage = lazy(() => import("./pages/ChatPage"));
 const AdminPage = lazy(() => import("./pages/AdminPage"));
+
 const TopupPage = lazy(() => import("./pages/TopupPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 

@@ -77,9 +77,6 @@ const AppSidebar = () => {
         {navItems.map((item) => (
           <NavItem key={item.label} {...item} end={item.path === "/"} />
         ))}
-        {isAdmin && (
-          <NavItem icon={Shield} label="管理后台" path="/admin" />
-        )}
       </nav>
 
       <div className="px-2 pb-3 space-y-0.5">
