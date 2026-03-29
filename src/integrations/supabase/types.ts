@@ -247,24 +247,36 @@ export type Database = {
           amount: number
           created_at: string
           id: string
+          out_trade_no: string | null
+          package_id: string | null
+          paid_at: string | null
           points: number
           status: string
+          trade_no: string | null
           user_id: string
         }
         Insert: {
           amount: number
           created_at?: string
           id?: string
+          out_trade_no?: string | null
+          package_id?: string | null
+          paid_at?: string | null
           points: number
           status?: string
+          trade_no?: string | null
           user_id: string
         }
         Update: {
           amount?: number
           created_at?: string
           id?: string
+          out_trade_no?: string | null
+          package_id?: string | null
+          paid_at?: string | null
           points?: number
           status?: string
+          trade_no?: string | null
           user_id?: string
         }
         Relationships: []
