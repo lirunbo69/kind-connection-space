@@ -334,7 +334,7 @@ serve(async (req) => {
           send("step", { step: 3, status: "running" });
           console.log("[Step 4] 主图生成");
           const step4 = getTemplate("主图生成",
-            `Generate a professional e-commerce product photo of {{product_name}}. {{product_description}}. White background, studio lighting, high quality, 4k resolution. Output the image directly.`,
+            `Generate a professional e-commerce product photo of {{product_name}}. {{product_description}}. Pure white background, studio lighting, product centered, high quality, 4k resolution. Image aspect ratio: {{image_size_desc}}. Output the image directly.`,
             DEFAULT_IMAGE_MODEL);
           let mainImage = "";
           try {
