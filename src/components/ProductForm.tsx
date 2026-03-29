@@ -35,6 +35,7 @@ const ProductForm = ({ onGenerate, isLoading, initialData }: ProductFormProps) =
       language: "",
       titleLimit: "",
       imageCount: "",
+      aspectRatio: "1:1",
       whiteBgImages: [],
       referenceImages: [],
       hotSearchImages: [],
