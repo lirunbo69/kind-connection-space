@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { NavLink } from "@/components/NavLink";
 import { useSidebarCollapsed } from "@/components/SidebarContext";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useIsAdmin } from "@/hooks/useIsAdmin";
+
 import { useUserPoints } from "@/hooks/useUserPoints";
 
 const navItems = [
