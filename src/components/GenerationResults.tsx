@@ -98,7 +98,7 @@ const ResultSection = ({
   );
 };
 
-const MainImageGallery = ({ images }: { images?: string[] }) => (
+const MainImageGallery = ({ images, onImageClick }: { images?: string[]; onImageClick: (url: string) => void }) => (
   <div>
     <div className="flex items-center justify-between mb-2">
       <div className="flex items-center gap-1.5">
@@ -125,13 +125,16 @@ const MainImageGallery = ({ images }: { images?: string[] }) => (
     {images && images.length > 0 ? (
       <div className={`grid gap-2 ${images.length === 1 ? "grid-cols-1" : images.length === 2 ? "grid-cols-2" : "grid-cols-3"}`}>
         {images.map((img, i) => (
-          <div key={i} className="relative group">
+          <div key={i} className="relative group cursor-pointer" onClick={() => onImageClick(img)}>
             <img src={img} alt={`主图 ${i + 1}`} className="w-full rounded-xl border border-white/40 object-contain max-h-[400px] shadow-md bg-white" />
+            <div className="absolute inset-0 rounded-xl bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+              <ZoomIn className="w-6 h-6 text-white opacity-0 group-hover:opacity-80 transition-opacity drop-shadow-lg" />
+            </div>
             <Button
               variant="secondary"
               size="sm"
               className="absolute bottom-1 right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-              onClick={() => downloadImage(img, `main-image-${i + 1}.png`)}
+              onClick={(e) => { e.stopPropagation(); downloadImage(img, `main-image-${i + 1}.png`); }}
             >
               <Download className="w-3 h-3" />
             </Button>
