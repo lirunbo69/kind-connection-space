@@ -1,5 +1,7 @@
-import { CheckCircle, Copy, Clock, Image, Images, Download } from "lucide-react";
+import { useState } from "react";
+import { CheckCircle, Copy, Clock, Image, Images, Download, X, ZoomIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
 export interface ListingResult {
@@ -96,7 +98,7 @@ const ResultSection = ({
   );
 };
 
-const MainImageGallery = ({ images }: { images?: string[] }) => (
+const MainImageGallery = ({ images, onImageClick }: { images?: string[]; onImageClick: (url: string) => void }) => (
   <div>
     <div className="flex items-center justify-between mb-2">
       <div className="flex items-center gap-1.5">
@@ -123,13 +125,16 @@ const MainImageGallery = ({ images }: { images?: string[] }) => (
     {images && images.length > 0 ? (
       <div className={`grid gap-2 ${images.length === 1 ? "grid-cols-1" : images.length === 2 ? "grid-cols-2" : "grid-cols-3"}`}>
         {images.map((img, i) => (
-          <div key={i} className="relative group">
+          <div key={i} className="relative group cursor-pointer" onClick={() => onImageClick(img)}>
             <img src={img} alt={`主图 ${i + 1}`} className="w-full rounded-xl border border-white/40 object-contain max-h-[400px] shadow-md bg-white" />
+            <div className="absolute inset-0 rounded-xl bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+              <ZoomIn className="w-6 h-6 text-white opacity-0 group-hover:opacity-80 transition-opacity drop-shadow-lg" />
+            </div>
             <Button
               variant="secondary"
               size="sm"
               className="absolute bottom-1 right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-              onClick={() => downloadImage(img, `main-image-${i + 1}.png`)}
+              onClick={(e) => { e.stopPropagation(); downloadImage(img, `main-image-${i + 1}.png`); }}
             >
               <Download className="w-3 h-3" />
             </Button>
@@ -147,9 +152,11 @@ const MainImageGallery = ({ images }: { images?: string[] }) => (
 const CarouselGallery = ({
   plan,
   images,
+  onImageClick,
 }: {
   plan?: string[];
   images?: string[];
+  onImageClick: (url: string) => void;
 }) => (
   <div>
     <div className="flex items-center justify-between mb-2">
@@ -192,13 +199,16 @@ const CarouselGallery = ({
     {images && images.length > 0 ? (
       <div className="grid grid-cols-3 gap-2">
         {images.map((img, i) => (
-          <div key={i} className="relative group">
+          <div key={i} className="relative group cursor-pointer" onClick={() => onImageClick(img)}>
             <img src={img} alt={`轮播图 ${i + 1}`} className="w-full rounded-xl border border-white/40 object-contain bg-white shadow-sm hover:shadow-md transition-shadow" />
+            <div className="absolute inset-0 rounded-xl bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+              <ZoomIn className="w-5 h-5 text-white opacity-0 group-hover:opacity-80 transition-opacity drop-shadow-lg" />
+            </div>
             <Button
               variant="secondary"
               size="sm"
               className="absolute bottom-1 right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-              onClick={() => downloadImage(img, `carousel-${i + 1}.png`)}
+              onClick={(e) => { e.stopPropagation(); downloadImage(img, `carousel-${i + 1}.png`); }}
             >
               <Download className="w-3 h-3" />
             </Button>
@@ -218,8 +228,8 @@ const CarouselGallery = ({
 );
 
 const GenerationResults = ({ result }: { result: ListingResult | null }) => {
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const hasResult = !!result;
-  // Support both mainImages array and legacy mainImage string
   const allMainImages = result?.mainImages?.length
     ? result.mainImages
     : result?.mainImage
@@ -228,37 +238,51 @@ const GenerationResults = ({ result }: { result: ListingResult | null }) => {
   const hasAnyImage = allMainImages.length > 0 || (result?.carouselImages && result.carouselImages.length > 0);
 
   return (
-    <div className="glass-strong rounded-2xl p-6 animate-glass-reveal" style={{ animationDelay: "0.2s" }}>
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-2.5">
-          {hasResult ? (
-            <CheckCircle className="w-5 h-5 text-emerald-500" />
-          ) : (
-            <Clock className="w-5 h-5 text-muted-foreground" />
+    <>
+      <Dialog open={!!lightboxUrl} onOpenChange={(open) => !open && setLightboxUrl(null)}>
+        <DialogContent className="max-w-[90vw] max-h-[90vh] p-2 bg-black/90 border-none flex items-center justify-center">
+          {lightboxUrl && (
+            <img
+              src={lightboxUrl}
+              alt="放大预览"
+              className="max-w-full max-h-[85vh] object-contain rounded-lg"
+            />
           )}
-          <h2 className="text-lg font-semibold text-foreground">生成结果</h2>
-        </div>
-        {hasAnyImage && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-xs gap-1 h-8 rounded-lg"
-            onClick={() => downloadAllImages(undefined, [...allMainImages, ...(result?.carouselImages || [])])}
-          >
-            <Download className="w-3.5 h-3.5" />
-            批量下载全部图片
-          </Button>
-        )}
-      </div>
+        </DialogContent>
+      </Dialog>
 
-      <div className="space-y-5">
-        <ResultSection label="核心卖点" content={result?.sellingPoints?.map((p, i) => `${i + 1}. ${p}`).join("\n")} placeholder="卖点将在此处显示..." copyable />
-        <ResultSection label="生成标题" content={result?.title} placeholder="标题将在此处显示..." copyable />
-        <ResultSection label="商品描述" content={result?.description} placeholder="描述将在此处显示..." copyable />
-        <MainImageGallery images={allMainImages.length > 0 ? allMainImages : undefined} />
-        <CarouselGallery plan={result?.carouselPlan} images={result?.carouselImages} />
+      <div className="glass-strong rounded-2xl p-6 animate-glass-reveal" style={{ animationDelay: "0.2s" }}>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2.5">
+            {hasResult ? (
+              <CheckCircle className="w-5 h-5 text-emerald-500" />
+            ) : (
+              <Clock className="w-5 h-5 text-muted-foreground" />
+            )}
+            <h2 className="text-lg font-semibold text-foreground">生成结果</h2>
+          </div>
+          {hasAnyImage && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-xs gap-1 h-8 rounded-lg"
+              onClick={() => downloadAllImages(undefined, [...allMainImages, ...(result?.carouselImages || [])])}
+            >
+              <Download className="w-3.5 h-3.5" />
+              批量下载全部图片
+            </Button>
+          )}
+        </div>
+
+        <div className="space-y-5">
+          <ResultSection label="核心卖点" content={result?.sellingPoints?.map((p, i) => `${i + 1}. ${p}`).join("\n")} placeholder="卖点将在此处显示..." copyable />
+          <ResultSection label="生成标题" content={result?.title} placeholder="标题将在此处显示..." copyable />
+          <ResultSection label="商品描述" content={result?.description} placeholder="描述将在此处显示..." copyable />
+          <MainImageGallery images={allMainImages.length > 0 ? allMainImages : undefined} onImageClick={setLightboxUrl} />
+          <CarouselGallery plan={result?.carouselPlan} images={result?.carouselImages} onImageClick={setLightboxUrl} />
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 
