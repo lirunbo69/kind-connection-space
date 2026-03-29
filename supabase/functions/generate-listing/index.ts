@@ -203,9 +203,13 @@ serve(async (req) => {
     const body = await req.json();
     const {
       productName, productDescription, keywords, market, language,
-      titleLimit, imageCount, templates,
+      titleLimit, imageCount, aspectRatio, templates,
       whiteBgImages, referenceImages, hotSearchImages,
     } = body;
+
+    const ratio = aspectRatio === "3:4" ? "3:4" : "1:1";
+    const imageSize = ratio === "3:4" ? "1080x1440" : "1024x1024";
+    const imageSizeDesc = ratio === "3:4" ? "3:4 portrait (1080x1440px)" : "1:1 square (1024x1024px)";
 
     const imgCount_pre = Math.min(Math.max(parseInt(imageCount) || 3, 1), 6);
     const estimatedCost = ESTIMATED_TEXT_COST + ESTIMATED_IMAGE_COST * (1 + imgCount_pre);
@@ -259,6 +263,9 @@ serve(async (req) => {
       language: langName,
       title_limit: charLimit,
       image_count: String(imgCount),
+      aspect_ratio: ratio,
+      image_size: imageSize,
+      image_size_desc: imageSizeDesc,
       has_white_bg_images: hasWhiteBg ? "是" : "否",
       white_bg_image_count: String(whiteBgImages?.length || 0),
       has_reference_images: hasRef ? "是" : "否",
@@ -330,7 +337,7 @@ serve(async (req) => {
           send("step", { step: 3, status: "running" });
           console.log("[Step 4] 主图生成");
           const step4 = getTemplate("主图生成",
-            `Generate a professional e-commerce product photo of {{product_name}}. {{product_description}}. White background, studio lighting, high quality, 4k resolution. Output the image directly.`,
+            `Generate a professional e-commerce product photo of {{product_name}}. {{product_description}}. Pure white background, studio lighting, product centered, high quality, 4k resolution. Image aspect ratio: {{image_size_desc}}. Output the image directly.`,
             DEFAULT_IMAGE_MODEL);
           let mainImage = "";
           try {
@@ -365,7 +372,7 @@ serve(async (req) => {
           send("step", { step: 5, status: "running" });
           console.log("[Step 6] 轮播图生成");
           const step6 = getTemplate("轮播图生成",
-            `Generate a professional e-commerce product photo: {{carousel_plan_item}}. Product: {{product_name}}. Clean background, studio lighting, high quality. Output the image directly.`,
+            `Generate a professional e-commerce product photo: {{carousel_plan_item}}. Product: {{product_name}}. Clean white background, studio lighting, product centered, high quality. Image aspect ratio: {{image_size_desc}}. Output the image directly.`,
             DEFAULT_IMAGE_MODEL);
           const carouselImages: string[] = [];
           for (const plan of carouselPlan) {

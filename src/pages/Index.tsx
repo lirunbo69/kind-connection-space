@@ -120,6 +120,7 @@ const Index = () => {
           language: fd.language,
           titleLimit: fd.titleLimit,
           imageCount: fd.imageCount,
+          aspectRatio: fd.aspectRatio || "1:1",
           templates: templates || [],
           whiteBgImages: fd.whiteBgImages || [],
           referenceImages: fd.referenceImages || [],
@@ -203,7 +204,7 @@ const Index = () => {
     fd: { productName: string; productDescription: string; keywords: string; market: string; language: string },
     res: ListingResult
   ) => {
-    setFormData({ ...fd, titleLimit: "", imageCount: "", whiteBgImages: [], referenceImages: [], hotSearchImages: [] } as ProductFormData);
+    setFormData({ ...fd, titleLimit: "", imageCount: "", aspectRatio: "1:1", whiteBgImages: [], referenceImages: [], hotSearchImages: [] } as ProductFormData);
     setResult(res);
     setStatuses(Array(6).fill("done"));
   };

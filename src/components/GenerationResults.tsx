@@ -63,7 +63,7 @@ const ImagePlaceholder = ({ label, placeholder, image }: { label: string; placeh
       <span className="text-sm font-semibold text-foreground">{label}</span>
     </div>
     {image ? (
-      <img src={image} alt={label} className="w-full rounded-xl border border-white/40 object-cover max-h-[240px] shadow-md" />
+      <img src={image} alt={label} className="w-full rounded-xl border border-white/40 object-contain max-h-[400px] shadow-md bg-white" />
     ) : (
       <div className="rounded-xl border-2 border-dashed border-border/40 glass-subtle flex items-center justify-center h-[160px] text-sm text-muted-foreground">
         {placeholder}
@@ -102,7 +102,7 @@ const CarouselGallery = ({
     {images && images.length > 0 ? (
       <div className="grid grid-cols-3 gap-2">
         {images.map((img, i) => (
-          <img key={i} src={img} alt={`轮播图 ${i + 1}`} className="w-full rounded-xl border border-white/40 object-cover aspect-square shadow-sm hover:shadow-md transition-shadow" />
+          <img key={i} src={img} alt={`轮播图 ${i + 1}`} className="w-full rounded-xl border border-white/40 object-contain bg-white shadow-sm hover:shadow-md transition-shadow" />
         ))}
       </div>
     ) : (

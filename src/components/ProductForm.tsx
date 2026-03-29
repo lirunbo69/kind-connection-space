@@ -13,6 +13,7 @@ export interface ProductFormData {
   language: string;
   titleLimit: string;
   imageCount: string;
+  aspectRatio: string;
   whiteBgImages: string[];
   referenceImages: string[];
   hotSearchImages: string[];
@@ -34,6 +35,7 @@ const ProductForm = ({ onGenerate, isLoading, initialData }: ProductFormProps) =
       language: "",
       titleLimit: "",
       imageCount: "",
+      aspectRatio: "1:1",
       whiteBgImages: [],
       referenceImages: [],
       hotSearchImages: [],
@@ -120,6 +122,42 @@ const ProductForm = ({ onGenerate, isLoading, initialData }: ProductFormProps) =
           <div>
             <label className="block text-sm font-medium mb-1.5 text-foreground/80">图片生成数量</label>
             <Input placeholder="例如：3" type="number" className={inputClass} value={formData.imageCount} onChange={(e) => updateField("imageCount", e.target.value)} />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1.5 text-foreground/80">图片生成比例</label>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => updateField("aspectRatio", "1:1")}
+              className={`flex flex-col items-center gap-2 rounded-xl px-4 py-3 border-2 transition-all ${
+                formData.aspectRatio === "1:1"
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border/40 glass-subtle text-muted-foreground hover:border-primary/40"
+              }`}
+            >
+              <div className={`w-10 h-10 rounded-md border-2 ${formData.aspectRatio === "1:1" ? "border-primary" : "border-muted-foreground/40"}`} />
+              <div className="text-center">
+                <div className="text-sm font-semibold">1:1 正方形</div>
+                <div className="text-xs opacity-70">美客多主图默认</div>
+              </div>
+            </button>
+            <button
+              type="button"
+              onClick={() => updateField("aspectRatio", "3:4")}
+              className={`flex flex-col items-center gap-2 rounded-xl px-4 py-3 border-2 transition-all ${
+                formData.aspectRatio === "3:4"
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border/40 glass-subtle text-muted-foreground hover:border-primary/40"
+              }`}
+            >
+              <div className={`w-8 h-10 rounded-md border-2 ${formData.aspectRatio === "3:4" ? "border-primary" : "border-muted-foreground/40"}`} />
+              <div className="text-center">
+                <div className="text-sm font-semibold">3:4 竖版</div>
+                <div className="text-xs opacity-70">详情页/广告图</div>
+              </div>
+            </button>
           </div>
         </div>
 
