@@ -395,30 +395,39 @@ serve(async (req) => {
 
           // ===== Step 4: 主图生成 =====
           send("step", { step: 3, status: "running" });
-          console.log("[Step 4] 主图生成");
+          console.log(`[Step 4] 主图生成 (${mainImgCount} 张)`);
           const step4 = getTemplate("主图生成",
             `Generate a professional e-commerce product photo of {{product_name}}. {{product_description}}. Pure white background, studio lighting, product centered, high quality, 4k resolution. Image aspect ratio: {{image_size_desc}}. Output the image directly.`,
             DEFAULT_IMAGE_MODEL);
-          let mainImage = "";
+          const mainImages: string[] = [];
           const step4Vars = { ...baseVars, carousel_plan_item: `Main hero product photo of ${productName}` };
           const genId = crypto.randomUUID().substring(0, 8);
-          try {
-            const step4Prompt = renderTemplate(step4.content, step4Vars);
-            console.log(`[Step 4] Rendered prompt (${step4Prompt.length} chars): ${step4Prompt.substring(0, 150)}...`);
-            const step4Data = await callOpenRouter(apiKey, step4.model, step4Prompt, whiteBgImages);
-            const rawImage = extractImage(step4Data);
-            if (rawImage && rawImage.startsWith("data:")) {
-              mainImage = await uploadImageToStorage(adminClient, user.id, rawImage, `main-${genId}`);
-              console.log(`[Step 4] Image uploaded, URL length: ${mainImage.length}`);
-            } else if (rawImage) {
-              mainImage = rawImage; // already a URL
-            } else {
-              console.warn("[Step 4] No image extracted from response.");
+          const mainImageAngles = [
+            "front view, hero shot",
+            "45 degree angle, perspective view",
+            "slightly different angle, showcase details",
+          ];
+          for (let mi = 0; mi < mainImgCount; mi++) {
+            try {
+              const angleHint = mi > 0 ? ` Shot angle: ${mainImageAngles[mi] || "alternative angle"}.` : "";
+              const step4Prompt = renderTemplate(step4.content, step4Vars) + angleHint;
+              console.log(`[Step 4] Main image ${mi + 1}/${mainImgCount}, prompt (${step4Prompt.length} chars)`);
+              const step4Data = await callOpenRouter(apiKey, step4.model, step4Prompt, whiteBgImages);
+              const rawImage = extractImage(step4Data);
+              if (rawImage && rawImage.startsWith("data:")) {
+                const url = await uploadImageToStorage(adminClient, user.id, rawImage, `main-${genId}-${mi}`);
+                mainImages.push(url);
+              } else if (rawImage) {
+                mainImages.push(rawImage);
+              } else {
+                console.warn(`[Step 4] No image extracted for main image ${mi + 1}.`);
+              }
+            } catch (e) {
+              console.error(`[Step 4] Main image ${mi + 1} generation failed:`, e);
             }
-          } catch (e) {
-            console.error("[Step 4] Main image generation failed:", e);
           }
-          send("result", { step: 3, data: { mainImage } });
+          // Send mainImages array and legacy mainImage for compat
+          send("result", { step: 3, data: { mainImages, mainImage: mainImages[0] || "" } });
           send("step", { step: 3, status: "done" });
 
           // ===== Step 5: 轮播图规划 =====
