@@ -11,13 +11,23 @@ export interface ListingResult {
   carouselImages?: string[];
 }
 
-function downloadImage(dataUrl: string, filename: string) {
-  const link = document.createElement("a");
-  link.href = dataUrl;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+async function downloadImage(url: string, filename: string) {
+  try {
+    // Fetch the image and create a blob URL for reliable cross-origin download
+    const response = await fetch(url);
+    const blob = await response.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = blobUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(blobUrl);
+  } catch (e) {
+    // Fallback: open in new tab
+    window.open(url, "_blank");
+  }
 }
 
 async function downloadAllImages(mainImage?: string, carouselImages?: string[]) {

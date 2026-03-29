@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { decode as decodeBase64 } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,6 +12,54 @@ const ESTIMATED_TEXT_COST = 10;
 const ESTIMATED_IMAGE_COST = 20;
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
+
+// Upload base64 image to Supabase Storage and return public URL
+async function uploadImageToStorage(
+  adminClient: any,
+  userId: string,
+  base64DataUrl: string,
+  fileName: string,
+): Promise<string> {
+  try {
+    // Extract mime type and base64 data
+    const match = base64DataUrl.match(/^data:(image\/\w+);base64,(.+)$/s);
+    if (!match) {
+      console.error("[uploadImage] Invalid base64 data URL format");
+      return base64DataUrl; // fallback to base64
+    }
+    const mimeType = match[1];
+    const base64Data = match[2];
+    const ext = mimeType.split("/")[1] || "png";
+    const filePath = `${userId}/${fileName}.${ext}`;
+
+    // Decode base64 to Uint8Array
+    const imageBytes = decodeBase64(base64Data);
+
+    // Upload to storage
+    const { data, error } = await adminClient.storage
+      .from("listing-images")
+      .upload(filePath, imageBytes, {
+        contentType: mimeType,
+        upsert: true,
+      });
+
+    if (error) {
+      console.error("[uploadImage] Upload error:", error.message);
+      return base64DataUrl; // fallback
+    }
+
+    // Get public URL
+    const { data: urlData } = adminClient.storage
+      .from("listing-images")
+      .getPublicUrl(filePath);
+
+    console.log(`[uploadImage] Uploaded ${filePath}, URL: ${urlData.publicUrl?.substring(0, 80)}...`);
+    return urlData.publicUrl;
+  } catch (e) {
+    console.error("[uploadImage] Exception:", e);
+    return base64DataUrl; // fallback
+  }
+}
 
 // Models that support image output
 const IMAGE_OUTPUT_MODELS = [
@@ -350,14 +399,19 @@ serve(async (req) => {
             `Generate a professional e-commerce product photo of {{product_name}}. {{product_description}}. Pure white background, studio lighting, product centered, high quality, 4k resolution. Image aspect ratio: {{image_size_desc}}. Output the image directly.`,
             DEFAULT_IMAGE_MODEL);
           let mainImage = "";
-          // Build Step 4 specific vars - include product info for main image context
           const step4Vars = { ...baseVars, carousel_plan_item: `Main hero product photo of ${productName}` };
+          const genId = crypto.randomUUID().substring(0, 8);
           try {
             const step4Prompt = renderTemplate(step4.content, step4Vars);
             console.log(`[Step 4] Rendered prompt (${step4Prompt.length} chars): ${step4Prompt.substring(0, 150)}...`);
             const step4Data = await callOpenRouter(apiKey, step4.model, step4Prompt, whiteBgImages);
-            mainImage = extractImage(step4Data);
-            if (!mainImage) {
+            const rawImage = extractImage(step4Data);
+            if (rawImage && rawImage.startsWith("data:")) {
+              mainImage = await uploadImageToStorage(adminClient, user.id, rawImage, `main-${genId}`);
+              console.log(`[Step 4] Image uploaded, URL length: ${mainImage.length}`);
+            } else if (rawImage) {
+              mainImage = rawImage; // already a URL
+            } else {
               console.warn("[Step 4] No image extracted from response.");
             }
           } catch (e) {
@@ -389,12 +443,18 @@ serve(async (req) => {
             `Generate a professional e-commerce product photo: {{carousel_plan_item}}. Product: {{product_name}}. Clean white background, studio lighting, product centered, high quality. Image aspect ratio: {{image_size_desc}}. Output the image directly.`,
             DEFAULT_IMAGE_MODEL);
           const carouselImages: string[] = [];
-          for (const plan of carouselPlan) {
+          for (let ci = 0; ci < carouselPlan.length; ci++) {
+            const plan = carouselPlan[ci];
             try {
               const imgPrompt = renderTemplate(step6.content, { ...baseVars, carousel_plan_item: plan });
               const step6Data = await callOpenRouter(apiKey, step6.model, imgPrompt, referenceImages);
-              const img = extractImage(step6Data);
-              if (img) carouselImages.push(img);
+              const rawImg = extractImage(step6Data);
+              if (rawImg && rawImg.startsWith("data:")) {
+                const imgUrl = await uploadImageToStorage(adminClient, user.id, rawImg, `carousel-${genId}-${ci}`);
+                carouselImages.push(imgUrl);
+              } else if (rawImg) {
+                carouselImages.push(rawImg);
+              }
             } catch (e) {
               console.error("[Step 6] Carousel image generation failed:", e);
             }
@@ -421,8 +481,8 @@ serve(async (req) => {
             points_cost: totalCost,
           });
 
-          // Send done event WITHOUT base64 images (already sent via result events) to avoid huge JSON payload
-          send("done", { sellingPoints, title, description, mainImage: mainImage ? "[sent]" : "", carouselPlan, carouselImages: carouselImages.map(() => "[sent]"), pointsUsed: totalCost, remainingPoints: newPoints });
+          // Images are now URLs (not base64), safe to include in done event
+          send("done", { sellingPoints, title, description, mainImage, carouselPlan, carouselImages, pointsUsed: totalCost, remainingPoints: newPoints });
           console.log(`[Done] sellingPoints=${sellingPoints.length}, title=${title.length}, desc=${description.length}, mainImage=${mainImage ? 'yes' : 'no'}, carousel=${carouselImages.length}, cost=${totalCost}`);
         } catch (e) {
           console.error("generate-listing stream error:", e);

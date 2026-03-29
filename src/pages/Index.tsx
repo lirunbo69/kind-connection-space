@@ -41,12 +41,7 @@ const Index = () => {
   useEffect(() => {
     if (result && result.title && result.description) {
       try {
-        const light = {
-          ...result,
-          mainImage: result.mainImage?.startsWith("data:") ? undefined : result.mainImage,
-          carouselImages: result.carouselImages?.filter((img: string) => !img.startsWith("data:")),
-        };
-        sessionStorage.setItem(RESULT_STORAGE_KEY, JSON.stringify(light));
+        sessionStorage.setItem(RESULT_STORAGE_KEY, JSON.stringify(result));
       } catch { /* quota exceeded, ignore */ }
     }
   }, [result]);
