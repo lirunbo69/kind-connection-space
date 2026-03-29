@@ -65,7 +65,7 @@ const Index = () => {
         title: res.title,
         selling_points: res.sellingPoints as any,
         description: res.description,
-        main_image: res.mainImage || null,
+        main_image: (res.mainImages?.[0] || res.mainImage) || null,
         carousel_plan: res.carouselPlan as any || null,
         carousel_images: res.carouselImages as any || null,
       } as any);
