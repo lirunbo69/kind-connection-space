@@ -254,7 +254,7 @@ serve(async (req) => {
     const body = await req.json();
     const {
       productName, productDescription, keywords, market, language,
-      titleLimit, imageCount, aspectRatio, templates,
+      titleLimit, imageCount, mainImageCount, aspectRatio, templates,
       whiteBgImages, referenceImages, hotSearchImages,
     } = body;
 
@@ -262,8 +262,9 @@ serve(async (req) => {
     const imageSize = ratio === "3:4" ? "1080x1440" : "1024x1024";
     const imageSizeDesc = ratio === "3:4" ? "3:4 portrait (1080x1440px)" : "1:1 square (1024x1024px)";
 
+    const mainImgCount = Math.min(Math.max(parseInt(mainImageCount) || 1, 1), 3);
     const imgCount_pre = Math.min(Math.max(parseInt(imageCount) || 3, 1), 6);
-    const estimatedCost = ESTIMATED_TEXT_COST + ESTIMATED_IMAGE_COST * (1 + imgCount_pre);
+    const estimatedCost = ESTIMATED_TEXT_COST + ESTIMATED_IMAGE_COST * (mainImgCount + imgCount_pre);
     const currentPoints = pointsData?.remaining_points ?? 0;
 
     if (currentPoints < estimatedCost) {
