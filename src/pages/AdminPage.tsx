@@ -618,6 +618,13 @@ const OverviewPanel = () => {
 // ═══════════════════════════════════════
 // ORDER PANEL
 // ═══════════════════════════════════════
+const ORDER_STATUS: Record<string, { label: string; color: string }> = {
+  pending: { label: "待支付", color: "hsl(40, 90%, 55%)" },
+  success: { label: "已完成", color: "hsl(160, 70%, 45%)" },
+  closed: { label: "已关闭", color: "hsl(225, 10%, 45%)" },
+  failed: { label: "支付失败", color: "hsl(350, 80%, 60%)" },
+};
+
 const OrderPanel = () => {
   const [orders, setOrders] = useState<any[]>([]);
   const [filtered, setFiltered] = useState<any[]>([]);
@@ -625,58 +632,111 @@ const OrderPanel = () => {
   const [search, setSearch] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
 
-  useEffect(() => {
-    const load = async () => {
-      const { data } = await supabase.from("recharge_records").select("*").order("created_at", { ascending: false }).limit(1000);
-      if (!data) { setLoading(false); return; }
-      const userIds = [...new Set(data.map(r => r.user_id))];
-      const { data: profiles } = await supabase.from("profiles").select("id, email, phone").in("id", userIds);
-      const pm = new Map(profiles?.map(p => [p.id, p.email || p.phone || "—"]) || []);
-      const enriched = data.map(r => ({ ...r, user_email: pm.get(r.user_id) || "—" }));
-      setOrders(enriched); setFiltered(enriched); setLoading(false);
-    };
-    load();
-  }, []);
+  const fetchOrders = async () => {
+    const { data } = await supabase.from("recharge_records").select("*").order("created_at", { ascending: false }).limit(1000);
+    if (!data) { setLoading(false); return; }
+    const userIds = [...new Set(data.map(r => r.user_id))];
+    const { data: profiles } = await supabase.from("profiles").select("id, email, phone").in("id", userIds);
+    const pm = new Map(profiles?.map(p => [p.id, p.email || p.phone || "—"]) || []);
+    const enriched = data.map(r => ({ ...r, user_email: pm.get(r.user_id) || "—" }));
+    setOrders(enriched); setFiltered(enriched); setLoading(false);
+  };
+
+  useEffect(() => { fetchOrders(); }, []);
 
   useEffect(() => {
     let result = orders;
-    if (search) { const q = search.toLowerCase(); result = result.filter(r => r.user_email?.toLowerCase().includes(q) || String(r.amount).includes(q)); }
+    if (search) { const q = search.toLowerCase(); result = result.filter(r => r.user_email?.toLowerCase().includes(q) || String(r.amount).includes(q) || (r.out_trade_no || "").toLowerCase().includes(q) || (r.trade_no || "").toLowerCase().includes(q)); }
     if (dateFrom) result = result.filter(r => r.created_at >= dateFrom);
     if (dateTo) result = result.filter(r => r.created_at <= dateTo + "T23:59:59");
+    if (statusFilter !== "all") result = result.filter(r => r.status === statusFilter);
     setFiltered(result);
-  }, [search, dateFrom, dateTo, orders]);
+  }, [search, dateFrom, dateTo, statusFilter, orders]);
+
+  const handleCloseOrder = async (orderId: string) => {
+    if (!confirm("确定手动关闭此订单？")) return;
+    const { error } = await supabase.functions.invoke("admin-points", {
+      body: { action: "close_order", order_id: orderId },
+    });
+    // Fallback: direct update via admin RLS
+    await supabase.from("recharge_records").update({ status: "closed" }).eq("id", orderId);
+    toast.success("订单已关闭");
+    fetchOrders();
+  };
 
   const exportCSV = () => {
-    const header = "用户,金额,积分,状态,时间\n";
-    const rows = filtered.map(r => `${r.user_email},${r.amount},${r.points},${r.status},${new Date(r.created_at).toLocaleString("zh-CN")}`).join("\n");
+    const header = "订单号,用户,金额,积分,状态,支付宝交易号,创建时间,支付时间\n";
+    const rows = filtered.map(r => `${r.out_trade_no || ""},${r.user_email},${r.amount},${r.points},${r.status},${r.trade_no || ""},${new Date(r.created_at).toLocaleString("zh-CN")},${r.paid_at ? new Date(r.paid_at).toLocaleString("zh-CN") : ""}`).join("\n");
     const blob = new Blob(["\ufeff" + header + rows], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `orders_${new Date().toISOString().split("T")[0]}.csv`; a.click(); URL.revokeObjectURL(url);
   };
 
   if (loading) return <div className="text-center py-8" style={{ color: C.textDim }}>加载中...</div>;
 
+  const stats = {
+    total: orders.length,
+    success: orders.filter(o => o.status === "success").length,
+    pending: orders.filter(o => o.status === "pending").length,
+    totalRevenue: orders.filter(o => o.status === "success").reduce((s, o) => s + Number(o.amount), 0),
+  };
+
   return (
     <div className="space-y-4">
+      {/* Order stats */}
+      <div className="grid grid-cols-4 gap-4">
+        <KPICard label="总订单" value={stats.total.toString()} icon={ShoppingCart} color={C.cyan} />
+        <KPICard label="已完成" value={stats.success.toString()} icon={TrendingUp} color={C.emerald} />
+        <KPICard label="待支付" value={stats.pending.toString()} icon={Activity} color={C.amber} />
+        <KPICard label="总收入" value={`¥${stats.totalRevenue.toFixed(2)}`} icon={DollarSign} color={C.emerald} />
+      </div>
+
+      {/* Filters */}
       <div className="flex flex-wrap gap-3 items-end">
-        <div className="flex-1 min-w-[200px]"><label className="text-xs mb-1 block" style={{ color: C.textDim }}>搜索用户/金额</label><div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: C.textDim }} /><Input className="pl-9" placeholder="搜索..." value={search} onChange={e => setSearch(e.target.value)} style={IN_STYLE} /></div></div>
+        <div className="flex-1 min-w-[200px]"><label className="text-xs mb-1 block" style={{ color: C.textDim }}>搜索订单号/用户/金额</label><div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: C.textDim }} /><Input className="pl-9" placeholder="搜索..." value={search} onChange={e => setSearch(e.target.value)} style={IN_STYLE} /></div></div>
+        <div><label className="text-xs mb-1 block" style={{ color: C.textDim }}>状态筛选</label>
+          <Select value={statusFilter} onValueChange={setStatusFilter}><SelectTrigger className="w-[120px]" style={IN_STYLE}><SelectValue /></SelectTrigger><SelectContent style={{ background: "hsl(225, 16%, 13%)", border: `1px solid ${C.borderLight}` }}><SelectItem value="all" style={{ color: "#fff" }}>全部</SelectItem><SelectItem value="pending" style={{ color: "#fff" }}>待支付</SelectItem><SelectItem value="success" style={{ color: "#fff" }}>已完成</SelectItem><SelectItem value="closed" style={{ color: "#fff" }}>已关闭</SelectItem><SelectItem value="failed" style={{ color: "#fff" }}>失败</SelectItem></SelectContent></Select>
+        </div>
         <div><label className="text-xs mb-1 block" style={{ color: C.textDim }}>起始日期</label><Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} style={IN_STYLE} /></div>
         <div><label className="text-xs mb-1 block" style={{ color: C.textDim }}>截止日期</label><Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} style={IN_STYLE} /></div>
         <Button className="gap-2 border-0" onClick={exportCSV} style={{ background: C.cyan, color: "#000" }}><Download className="w-4 h-4" />导出 CSV</Button>
       </div>
+
       <GlassCard>
-        <div className="p-4 border-b" style={{ borderColor: C.border }}><h3 className="text-sm font-semibold" style={{ color: C.cyan }}>订单列表（共 {filtered.length} 条）</h3></div>
+        <div className="p-4 border-b" style={{ borderColor: C.border }}><h3 className="text-sm font-semibold" style={{ color: C.cyan }}>支付宝订单列表（共 {filtered.length} 条）</h3></div>
         <div className="p-4"><div className="max-h-[500px] overflow-auto">
-          <Table><TableHeader><TableRow className="border-b" style={{ borderColor: C.border }}><TableHead style={{ color: C.textDim }}>用户</TableHead><TableHead style={{ color: C.textDim }}>金额</TableHead><TableHead style={{ color: C.textDim }}>积分</TableHead><TableHead style={{ color: C.textDim }}>状态</TableHead><TableHead style={{ color: C.textDim }}>时间</TableHead></TableRow></TableHeader>
-            <TableBody>{filtered.slice(0, 200).map(r => (
-              <TableRow key={r.id} className="border-b hover:bg-white/[0.02] transition-colors" style={{ borderColor: "hsl(225, 14%, 13%)" }}>
-                <TableCell className="text-xs" style={{ color: C.textMid }}>{r.user_email}</TableCell>
-                <TableCell className="font-medium" style={{ color: C.amber }}>¥{r.amount}</TableCell>
-                <TableCell style={{ color: C.emerald }}>+{r.points.toLocaleString()}</TableCell>
-                <TableCell><span className="px-2 py-0.5 rounded-full text-xs" style={{ background: r.status === "success" ? `${C.emerald}15` : "hsl(225, 15%, 18%)", color: r.status === "success" ? C.emerald : C.textDim }}>{r.status === "success" ? "成功" : r.status}</span></TableCell>
-                <TableCell className="text-xs" style={{ color: C.textDim }}>{new Date(r.created_at).toLocaleString("zh-CN")}</TableCell>
-              </TableRow>
-            ))}</TableBody>
+          <Table><TableHeader><TableRow className="border-b" style={{ borderColor: C.border }}>
+            <TableHead style={{ color: C.textDim }}>订单号</TableHead>
+            <TableHead style={{ color: C.textDim }}>用户</TableHead>
+            <TableHead style={{ color: C.textDim }}>金额</TableHead>
+            <TableHead style={{ color: C.textDim }}>积分</TableHead>
+            <TableHead style={{ color: C.textDim }}>状态</TableHead>
+            <TableHead style={{ color: C.textDim }}>支付宝交易号</TableHead>
+            <TableHead style={{ color: C.textDim }}>创建时间</TableHead>
+            <TableHead style={{ color: C.textDim }}>支付时间</TableHead>
+            <TableHead style={{ color: C.textDim }}>操作</TableHead>
+          </TableRow></TableHeader>
+            <TableBody>{filtered.slice(0, 200).map(r => {
+              const st = ORDER_STATUS[r.status] || { label: r.status, color: C.textDim };
+              return (
+                <TableRow key={r.id} className="border-b hover:bg-white/[0.02] transition-colors" style={{ borderColor: "hsl(225, 14%, 13%)" }}>
+                  <TableCell className="text-xs font-mono" style={{ color: C.textMid }}>{r.out_trade_no || "—"}</TableCell>
+                  <TableCell className="text-xs" style={{ color: C.textMid }}>{r.user_email}</TableCell>
+                  <TableCell className="font-medium" style={{ color: C.amber }}>¥{r.amount}</TableCell>
+                  <TableCell style={{ color: C.emerald }}>+{r.points.toLocaleString()}</TableCell>
+                  <TableCell><span className="px-2 py-0.5 rounded-full text-xs" style={{ background: `${st.color}15`, color: st.color }}>{st.label}</span></TableCell>
+                  <TableCell className="text-xs font-mono" style={{ color: C.textDim }}>{r.trade_no || "—"}</TableCell>
+                  <TableCell className="text-xs" style={{ color: C.textDim }}>{new Date(r.created_at).toLocaleString("zh-CN")}</TableCell>
+                  <TableCell className="text-xs" style={{ color: C.textDim }}>{r.paid_at ? new Date(r.paid_at).toLocaleString("zh-CN") : "—"}</TableCell>
+                  <TableCell>
+                    {r.status === "pending" && (
+                      <Button variant="ghost" size="sm" onClick={() => handleCloseOrder(r.id)} className="text-xs h-7" style={{ color: C.rose }}>关闭</Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              );
+            })}</TableBody>
           </Table>
         </div></div>
       </GlassCard>
