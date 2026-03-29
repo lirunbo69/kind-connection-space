@@ -78,6 +78,7 @@ const App = () => {
   }
 
   const isResetPassword = window.location.pathname === "/reset-password";
+  const isAdminRoute = window.location.pathname === "/admin";
 
   const handleNavigateAuth = (tab?: string) => {
     if (tab) setDefaultAuthTab(tab);
