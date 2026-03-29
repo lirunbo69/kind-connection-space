@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import { usePageTracker } from "@/hooks/usePageTracker";
@@ -11,14 +11,16 @@ import { supabase } from "@/integrations/supabase/client";
 import LandingPage from "./pages/LandingPage";
 import AuthPage from "./pages/AuthPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
-import Index from "./pages/Index.tsx";
-import BatchPage from "./pages/BatchPage.tsx";
-import CompetitorPage from "./pages/CompetitorPage.tsx";
-import ProfilePage from "./pages/ProfilePage.tsx";
-import ChatPage from "./pages/ChatPage.tsx";
-import AdminPage from "./pages/AdminPage.tsx";
-import TopupPage from "./pages/TopupPage.tsx";
-import NotFound from "./pages/NotFound.tsx";
+
+// Lazy load route pages for faster initial load
+const Index = lazy(() => import("./pages/Index"));
+const BatchPage = lazy(() => import("./pages/BatchPage"));
+const CompetitorPage = lazy(() => import("./pages/CompetitorPage"));
+const ProfilePage = lazy(() => import("./pages/ProfilePage"));
+const ChatPage = lazy(() => import("./pages/ChatPage"));
+const AdminPage = lazy(() => import("./pages/AdminPage"));
+const TopupPage = lazy(() => import("./pages/TopupPage"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
 

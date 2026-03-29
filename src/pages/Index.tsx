@@ -6,6 +6,7 @@ import GenerationHistory from "@/components/GenerationHistory";
 import CreditsBar from "@/components/CreditsBar";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useUserPoints } from "@/hooks/useUserPoints";
 
 type Status = "waiting" | "running" | "done";
 

@@ -381,8 +381,27 @@ serve(async (req) => {
           send("result", { step: 5, data: { carouselImages } });
           send("step", { step: 5, status: "done" });
 
-          send("done", { sellingPoints, title, description, mainImage, carouselPlan, carouselImages });
-          console.log(`[Done] sellingPoints=${sellingPoints.length}, title=${title.length}, desc=${description.length}, mainImage=${mainImage ? 'yes' : 'no'}, carousel=${carouselImages.length}`);
+          // Deduct points after successful generation
+          const actualImageCount = (mainImage ? 1 : 0) + carouselImages.length;
+          const totalCost = ESTIMATED_TEXT_COST + ESTIMATED_IMAGE_COST * actualImageCount;
+          const newPoints = Math.max(0, currentPoints - totalCost);
+          await adminClient
+            .from("user_points")
+            .update({ remaining_points: newPoints, updated_at: new Date().toISOString() })
+            .eq("user_id", user.id);
+
+          // Log AI usage
+          await adminClient.from("ai_logs").insert({
+            user_id: user.id,
+            model_name: "openrouter-pipeline",
+            prompt_tokens: 0,
+            completion_tokens: 0,
+            image_count: actualImageCount,
+            points_cost: totalCost,
+          });
+
+          send("done", { sellingPoints, title, description, mainImage, carouselPlan, carouselImages, pointsUsed: totalCost, remainingPoints: newPoints });
+          console.log(`[Done] sellingPoints=${sellingPoints.length}, title=${title.length}, desc=${description.length}, mainImage=${mainImage ? 'yes' : 'no'}, carousel=${carouselImages.length}, cost=${totalCost}`);
         } catch (e) {
           console.error("generate-listing stream error:", e);
           const message = e instanceof Error ? e.message : "未知错误";
