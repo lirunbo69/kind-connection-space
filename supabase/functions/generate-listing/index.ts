@@ -236,7 +236,15 @@ serve(async (req) => {
     }
 
     const marketName = { MX: "墨西哥", BR: "巴西", CL: "智利", CO: "哥伦比亚", AR: "阿根廷", UY: "乌拉圭" }[market as string] || market || "墨西哥";
-    const langName = language || "西班牙语";
+    const langCodeToName: Record<string, string> = {
+      "es-MX": "西班牙语（墨西哥）/ Español de México",
+      "pt-BR": "葡萄牙语（巴西）/ Português do Brasil",
+      "es-CL": "西班牙语（智利）/ Español de Chile",
+      "es-CO": "西班牙语（哥伦比亚）/ Español de Colombia",
+      "es-AR": "西班牙语（阿根廷）/ Español de Argentina",
+      "es-UY": "西班牙语（乌拉圭）/ Español de Uruguay",
+    };
+    const langName = langCodeToName[language as string] || language || "西班牙语（墨西哥）/ Español de México";
     const charLimit = titleLimit || "60";
     const imgCount = Math.min(Math.max(parseInt(imageCount) || 3, 1), 6);
 
