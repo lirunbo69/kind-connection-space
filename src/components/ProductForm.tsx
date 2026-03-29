@@ -12,7 +12,8 @@ export interface ProductFormData {
   market: string;
   language: string;
   titleLimit: string;
-  imageCount: string;
+  mainImageCount: string;
+  carouselImageCount: string;
   aspectRatio: string;
   whiteBgImages: string[];
   referenceImages: string[];
@@ -34,7 +35,8 @@ const ProductForm = ({ onGenerate, isLoading, initialData }: ProductFormProps) =
       market: "",
       language: "",
       titleLimit: "",
-      imageCount: "",
+      mainImageCount: "1",
+      carouselImageCount: "3",
       aspectRatio: "1:1",
       whiteBgImages: [],
       referenceImages: [],
@@ -114,14 +116,29 @@ const ProductForm = ({ onGenerate, isLoading, initialData }: ProductFormProps) =
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium mb-1.5 text-foreground/80">标题字数限制</label>
             <Input placeholder="例如：60" type="number" className={inputClass} value={formData.titleLimit} onChange={(e) => updateField("titleLimit", e.target.value)} />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1.5 text-foreground/80">图片生成数量</label>
-            <Input placeholder="例如：3" type="number" className={inputClass} value={formData.imageCount} onChange={(e) => updateField("imageCount", e.target.value)} />
+            <label className="block text-sm font-medium mb-1.5 text-foreground/80">主图数量</label>
+            <select className={selectClass} value={formData.mainImageCount} onChange={(e) => updateField("mainImageCount", e.target.value)}>
+              <option value="1">1 张</option>
+              <option value="2">2 张</option>
+              <option value="3">3 张</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1.5 text-foreground/80">轮播图数量</label>
+            <select className={selectClass} value={formData.carouselImageCount} onChange={(e) => updateField("carouselImageCount", e.target.value)}>
+              <option value="1">1 张</option>
+              <option value="2">2 张</option>
+              <option value="3">3 张</option>
+              <option value="4">4 张</option>
+              <option value="5">5 张</option>
+              <option value="6">6 张</option>
+            </select>
           </div>
         </div>
 
@@ -167,7 +184,9 @@ const ProductForm = ({ onGenerate, isLoading, initialData }: ProductFormProps) =
 
         <div className="flex items-center gap-2 glass rounded-xl px-4 py-3">
           <Info className="w-4 h-4 text-primary shrink-0" />
-          <span className="text-sm text-muted-foreground">文本生成消耗10积分，每张图片消耗20积分</span>
+          <span className="text-sm text-muted-foreground">
+            文本生成消耗10积分，每张图片消耗20积分 · 预计消耗 {10 + 20 * ((parseInt(formData.mainImageCount) || 1) + (parseInt(formData.carouselImageCount) || 3))} 积分
+          </span>
         </div>
 
         <Button

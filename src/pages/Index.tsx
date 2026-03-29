@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import ProductForm, { type ProductFormData } from "@/components/ProductForm";
 import AIPipeline from "@/components/AIPipeline";
-import GenerationResults, { type ListingResult } from "@/components/GenerationResults";
+import GenerationResults from "@/components/GenerationResults";
+import type { ListingResult } from "@/components/GenerationResults";
 import GenerationHistory from "@/components/GenerationHistory";
 import CreditsBar from "@/components/CreditsBar";
 import { supabase } from "@/integrations/supabase/client";
@@ -64,7 +65,7 @@ const Index = () => {
         title: res.title,
         selling_points: res.sellingPoints as any,
         description: res.description,
-        main_image: res.mainImage || null,
+        main_image: (res.mainImages?.[0] || res.mainImage) || null,
         carousel_plan: res.carouselPlan as any || null,
         carousel_images: res.carouselImages as any || null,
       } as any);
@@ -84,8 +85,9 @@ const Index = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { toast.error("请先登录"); setIsLoading(false); return; }
       const { data: pts } = await supabase.from("user_points").select("remaining_points").eq("user_id", user.id).single();
-      const imgCount = Math.min(Math.max(parseInt(fd.imageCount) || 3, 1), 6);
-      const estimatedCost = 10 + 20 * (1 + imgCount);
+      const mainImgCount = Math.min(Math.max(parseInt(fd.mainImageCount) || 1, 1), 3);
+      const carouselImgCount = Math.min(Math.max(parseInt(fd.carouselImageCount) || 3, 1), 6);
+      const estimatedCost = 10 + 20 * (mainImgCount + carouselImgCount);
       if ((pts?.remaining_points ?? 0) < estimatedCost) {
         toast.error(`积分不足，预计消耗 ${estimatedCost} 积分，当前余额 ${pts?.remaining_points ?? 0}，请先充值`, { action: { label: "去充值", onClick: () => window.location.hash = "/topup" } });
         setIsLoading(false);
@@ -114,7 +116,8 @@ const Index = () => {
           market: fd.market,
           language: fd.language,
           titleLimit: fd.titleLimit,
-          imageCount: fd.imageCount,
+          mainImageCount: fd.mainImageCount || "1",
+          imageCount: fd.carouselImageCount || "3",
           aspectRatio: fd.aspectRatio || "1:1",
           templates: templates || [],
           whiteBgImages: fd.whiteBgImages || [],
@@ -199,7 +202,7 @@ const Index = () => {
     fd: { productName: string; productDescription: string; keywords: string; market: string; language: string },
     res: ListingResult
   ) => {
-    setFormData({ ...fd, titleLimit: "", imageCount: "", aspectRatio: "1:1", whiteBgImages: [], referenceImages: [], hotSearchImages: [] } as ProductFormData);
+    setFormData({ ...fd, titleLimit: "", mainImageCount: "1", carouselImageCount: "3", aspectRatio: "1:1", whiteBgImages: [], referenceImages: [], hotSearchImages: [] } as ProductFormData);
     setResult(res);
     setStatuses(Array(6).fill("done"));
   };

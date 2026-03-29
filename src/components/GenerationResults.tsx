@@ -6,7 +6,8 @@ export interface ListingResult {
   title: string;
   sellingPoints: string[];
   description: string;
-  mainImage?: string;
+  mainImages?: string[];
+  mainImage?: string; // legacy compat
   carouselPlan?: string[];
   carouselImages?: string[];
 }
@@ -95,30 +96,49 @@ const ResultSection = ({
   );
 };
 
-const ImagePlaceholder = ({ label, placeholder, image }: { label: string; placeholder: string; image?: string }) => (
+const MainImageGallery = ({ images }: { images?: string[] }) => (
   <div>
     <div className="flex items-center justify-between mb-2">
       <div className="flex items-center gap-1.5">
         <Image className="w-4 h-4 text-muted-foreground" />
-        <span className="text-sm font-semibold text-foreground">{label}</span>
+        <span className="text-sm font-semibold text-foreground">商品主图</span>
       </div>
-      {image && (
+      {images && images.length > 0 && (
         <Button
           variant="ghost"
           size="sm"
           className="text-xs text-muted-foreground gap-1 h-7 hover:bg-white/50 rounded-lg"
-          onClick={() => downloadImage(image, "main-image.png")}
+          onClick={() => {
+            images.forEach((img, i) => {
+              setTimeout(() => downloadImage(img, `main-image-${i + 1}.png`), i * 300);
+            });
+            toast.success(`正在下载 ${images.length} 张主图`);
+          }}
         >
           <Download className="w-3.5 h-3.5" />
-          下载
+          {images.length > 1 ? "全部下载" : "下载"}
         </Button>
       )}
     </div>
-    {image ? (
-      <img src={image} alt={label} className="w-full rounded-xl border border-white/40 object-contain max-h-[400px] shadow-md bg-white" />
+    {images && images.length > 0 ? (
+      <div className={`grid gap-2 ${images.length === 1 ? "grid-cols-1" : images.length === 2 ? "grid-cols-2" : "grid-cols-3"}`}>
+        {images.map((img, i) => (
+          <div key={i} className="relative group">
+            <img src={img} alt={`主图 ${i + 1}`} className="w-full rounded-xl border border-white/40 object-contain max-h-[400px] shadow-md bg-white" />
+            <Button
+              variant="secondary"
+              size="sm"
+              className="absolute bottom-1 right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+              onClick={() => downloadImage(img, `main-image-${i + 1}.png`)}
+            >
+              <Download className="w-3 h-3" />
+            </Button>
+          </div>
+        ))}
+      </div>
     ) : (
       <div className="rounded-xl border-2 border-dashed border-border/40 glass-subtle flex items-center justify-center h-[160px] text-sm text-muted-foreground font-sans">
-        {placeholder}
+        主图将在此处显示...
       </div>
     )}
   </div>
@@ -199,7 +219,13 @@ const CarouselGallery = ({
 
 const GenerationResults = ({ result }: { result: ListingResult | null }) => {
   const hasResult = !!result;
-  const hasAnyImage = !!(result?.mainImage || (result?.carouselImages && result.carouselImages.length > 0));
+  // Support both mainImages array and legacy mainImage string
+  const allMainImages = result?.mainImages?.length
+    ? result.mainImages
+    : result?.mainImage
+      ? [result.mainImage]
+      : [];
+  const hasAnyImage = allMainImages.length > 0 || (result?.carouselImages && result.carouselImages.length > 0);
 
   return (
     <div className="glass-strong rounded-2xl p-6 animate-glass-reveal" style={{ animationDelay: "0.2s" }}>
@@ -217,7 +243,7 @@ const GenerationResults = ({ result }: { result: ListingResult | null }) => {
             variant="outline"
             size="sm"
             className="text-xs gap-1 h-8 rounded-lg"
-            onClick={() => downloadAllImages(result?.mainImage, result?.carouselImages)}
+            onClick={() => downloadAllImages(undefined, [...allMainImages, ...(result?.carouselImages || [])])}
           >
             <Download className="w-3.5 h-3.5" />
             批量下载全部图片
@@ -229,7 +255,7 @@ const GenerationResults = ({ result }: { result: ListingResult | null }) => {
         <ResultSection label="核心卖点" content={result?.sellingPoints?.map((p, i) => `${i + 1}. ${p}`).join("\n")} placeholder="卖点将在此处显示..." copyable />
         <ResultSection label="生成标题" content={result?.title} placeholder="标题将在此处显示..." copyable />
         <ResultSection label="商品描述" content={result?.description} placeholder="描述将在此处显示..." copyable />
-        <ImagePlaceholder label="商品主图" placeholder="主图将在此处显示..." image={result?.mainImage} />
+        <MainImageGallery images={allMainImages.length > 0 ? allMainImages : undefined} />
         <CarouselGallery plan={result?.carouselPlan} images={result?.carouselImages} />
       </div>
     </div>

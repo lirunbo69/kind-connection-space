@@ -254,7 +254,7 @@ serve(async (req) => {
     const body = await req.json();
     const {
       productName, productDescription, keywords, market, language,
-      titleLimit, imageCount, aspectRatio, templates,
+      titleLimit, imageCount, mainImageCount, aspectRatio, templates,
       whiteBgImages, referenceImages, hotSearchImages,
     } = body;
 
@@ -262,8 +262,9 @@ serve(async (req) => {
     const imageSize = ratio === "3:4" ? "1080x1440" : "1024x1024";
     const imageSizeDesc = ratio === "3:4" ? "3:4 portrait (1080x1440px)" : "1:1 square (1024x1024px)";
 
+    const mainImgCount = Math.min(Math.max(parseInt(mainImageCount) || 1, 1), 3);
     const imgCount_pre = Math.min(Math.max(parseInt(imageCount) || 3, 1), 6);
-    const estimatedCost = ESTIMATED_TEXT_COST + ESTIMATED_IMAGE_COST * (1 + imgCount_pre);
+    const estimatedCost = ESTIMATED_TEXT_COST + ESTIMATED_IMAGE_COST * (mainImgCount + imgCount_pre);
     const currentPoints = pointsData?.remaining_points ?? 0;
 
     if (currentPoints < estimatedCost) {
@@ -394,30 +395,39 @@ serve(async (req) => {
 
           // ===== Step 4: 主图生成 =====
           send("step", { step: 3, status: "running" });
-          console.log("[Step 4] 主图生成");
+          console.log(`[Step 4] 主图生成 (${mainImgCount} 张)`);
           const step4 = getTemplate("主图生成",
             `Generate a professional e-commerce product photo of {{product_name}}. {{product_description}}. Pure white background, studio lighting, product centered, high quality, 4k resolution. Image aspect ratio: {{image_size_desc}}. Output the image directly.`,
             DEFAULT_IMAGE_MODEL);
-          let mainImage = "";
+          const mainImages: string[] = [];
           const step4Vars = { ...baseVars, carousel_plan_item: `Main hero product photo of ${productName}` };
           const genId = crypto.randomUUID().substring(0, 8);
-          try {
-            const step4Prompt = renderTemplate(step4.content, step4Vars);
-            console.log(`[Step 4] Rendered prompt (${step4Prompt.length} chars): ${step4Prompt.substring(0, 150)}...`);
-            const step4Data = await callOpenRouter(apiKey, step4.model, step4Prompt, whiteBgImages);
-            const rawImage = extractImage(step4Data);
-            if (rawImage && rawImage.startsWith("data:")) {
-              mainImage = await uploadImageToStorage(adminClient, user.id, rawImage, `main-${genId}`);
-              console.log(`[Step 4] Image uploaded, URL length: ${mainImage.length}`);
-            } else if (rawImage) {
-              mainImage = rawImage; // already a URL
-            } else {
-              console.warn("[Step 4] No image extracted from response.");
+          const mainImageAngles = [
+            "front view, hero shot",
+            "45 degree angle, perspective view",
+            "slightly different angle, showcase details",
+          ];
+          for (let mi = 0; mi < mainImgCount; mi++) {
+            try {
+              const angleHint = mi > 0 ? ` Shot angle: ${mainImageAngles[mi] || "alternative angle"}.` : "";
+              const step4Prompt = renderTemplate(step4.content, step4Vars) + angleHint;
+              console.log(`[Step 4] Main image ${mi + 1}/${mainImgCount}, prompt (${step4Prompt.length} chars)`);
+              const step4Data = await callOpenRouter(apiKey, step4.model, step4Prompt, whiteBgImages);
+              const rawImage = extractImage(step4Data);
+              if (rawImage && rawImage.startsWith("data:")) {
+                const url = await uploadImageToStorage(adminClient, user.id, rawImage, `main-${genId}-${mi}`);
+                mainImages.push(url);
+              } else if (rawImage) {
+                mainImages.push(rawImage);
+              } else {
+                console.warn(`[Step 4] No image extracted for main image ${mi + 1}.`);
+              }
+            } catch (e) {
+              console.error(`[Step 4] Main image ${mi + 1} generation failed:`, e);
             }
-          } catch (e) {
-            console.error("[Step 4] Main image generation failed:", e);
           }
-          send("result", { step: 3, data: { mainImage } });
+          // Send mainImages array and legacy mainImage for compat
+          send("result", { step: 3, data: { mainImages, mainImage: mainImages[0] || "" } });
           send("step", { step: 3, status: "done" });
 
           // ===== Step 5: 轮播图规划 =====
@@ -463,7 +473,7 @@ serve(async (req) => {
           send("step", { step: 5, status: "done" });
 
           // Deduct points after successful generation
-          const actualImageCount = (mainImage ? 1 : 0) + carouselImages.length;
+          const actualImageCount = mainImages.length + carouselImages.length;
           const totalCost = ESTIMATED_TEXT_COST + ESTIMATED_IMAGE_COST * actualImageCount;
           const newPoints = Math.max(0, currentPoints - totalCost);
           await adminClient
@@ -482,8 +492,8 @@ serve(async (req) => {
           });
 
           // Images are now URLs (not base64), safe to include in done event
-          send("done", { sellingPoints, title, description, mainImage, carouselPlan, carouselImages, pointsUsed: totalCost, remainingPoints: newPoints });
-          console.log(`[Done] sellingPoints=${sellingPoints.length}, title=${title.length}, desc=${description.length}, mainImage=${mainImage ? 'yes' : 'no'}, carousel=${carouselImages.length}, cost=${totalCost}`);
+          send("done", { sellingPoints, title, description, mainImages, mainImage: mainImages[0] || "", carouselPlan, carouselImages, pointsUsed: totalCost, remainingPoints: newPoints });
+          console.log(`[Done] sellingPoints=${sellingPoints.length}, title=${title.length}, desc=${description.length}, mainImages=${mainImages.length}, carousel=${carouselImages.length}, cost=${totalCost}`);
         } catch (e) {
           console.error("generate-listing stream error:", e);
           const message = e instanceof Error ? e.message : "未知错误";
