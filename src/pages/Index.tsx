@@ -202,7 +202,7 @@ const Index = () => {
     fd: { productName: string; productDescription: string; keywords: string; market: string; language: string },
     res: ListingResult
   ) => {
-    setFormData({ ...fd, titleLimit: "", imageCount: "", aspectRatio: "1:1", whiteBgImages: [], referenceImages: [], hotSearchImages: [] } as ProductFormData);
+    setFormData({ ...fd, titleLimit: "", mainImageCount: "1", carouselImageCount: "3", aspectRatio: "1:1", whiteBgImages: [], referenceImages: [], hotSearchImages: [] } as ProductFormData);
     setResult(res);
     setStatuses(Array(6).fill("done"));
   };
