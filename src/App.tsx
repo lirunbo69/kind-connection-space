@@ -90,7 +90,11 @@ const App = () => {
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        {isResetPassword ? (
+        {isAdminRoute ? (
+          <Suspense fallback={<div className="min-h-screen flex items-center justify-center" style={{ background: "hsl(225, 20%, 5%)" }}><div className="animate-spin w-8 h-8 border-2 rounded-full" style={{ borderColor: "hsl(195, 100%, 50%)", borderTopColor: "transparent" }} /></div>}>
+            <AdminPage />
+          </Suspense>
+        ) : isResetPassword ? (
           <ResetPasswordPage />
         ) : session ? (
           <BrowserRouter>
