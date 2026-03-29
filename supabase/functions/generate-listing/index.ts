@@ -8,6 +8,12 @@ const corsHeaders = {
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
+// Models that support image output
+const IMAGE_OUTPUT_MODELS = [
+  "google/gemini-3-pro-image-preview",
+  "google/gemini-3.1-flash-image-preview",
+];
+
 async function callOpenRouter(
   apiKey: string,
   model: string,
@@ -28,8 +34,14 @@ async function callOpenRouter(
     messages = [{ role: "user", content: textPrompt }];
   }
 
+  const isImageModel = IMAGE_OUTPUT_MODELS.some((m) => model.includes(m));
   const body: any = { model, messages, ...extraBody };
-  console.log(`[OpenRouter] model=${model}, images=${validImages.length}, promptLen=${textPrompt.length}`);
+  // CRITICAL: Add modalities for image generation models
+  if (isImageModel) {
+    body.modalities = ["image", "text"];
+  }
+
+  console.log(`[OpenRouter] model=${model}, images=${validImages.length}, promptLen=${textPrompt.length}, isImageModel=${isImageModel}`);
 
   const res = await fetch(OPENROUTER_URL, {
     method: "POST",
@@ -48,7 +60,17 @@ async function callOpenRouter(
     throw new Error(`AI 服务错误 (${res.status}): ${text.substring(0, 200)}`);
   }
 
-  return await res.json();
+  const responseData = await res.json();
+  // Log response structure for debugging image extraction
+  if (isImageModel) {
+    const msg = responseData.choices?.[0]?.message;
+    console.log(`[OpenRouter ImageResponse] hasImages=${!!msg?.images}, imagesCount=${msg?.images?.length || 0}, contentType=${typeof msg?.content}, contentIsArray=${Array.isArray(msg?.content)}`);
+    if (Array.isArray(msg?.content)) {
+      const types = msg.content.map((p: any) => p.type);
+      console.log(`[OpenRouter ImageResponse] contentParts types=${JSON.stringify(types)}`);
+    }
+  }
+  return responseData;
 }
 
 function extractText(data: any): string {
