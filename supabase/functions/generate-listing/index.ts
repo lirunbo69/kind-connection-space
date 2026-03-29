@@ -473,7 +473,7 @@ serve(async (req) => {
           send("step", { step: 5, status: "done" });
 
           // Deduct points after successful generation
-          const actualImageCount = (mainImage ? 1 : 0) + carouselImages.length;
+          const actualImageCount = mainImages.length + carouselImages.length;
           const totalCost = ESTIMATED_TEXT_COST + ESTIMATED_IMAGE_COST * actualImageCount;
           const newPoints = Math.max(0, currentPoints - totalCost);
           await adminClient
@@ -492,8 +492,8 @@ serve(async (req) => {
           });
 
           // Images are now URLs (not base64), safe to include in done event
-          send("done", { sellingPoints, title, description, mainImage, carouselPlan, carouselImages, pointsUsed: totalCost, remainingPoints: newPoints });
-          console.log(`[Done] sellingPoints=${sellingPoints.length}, title=${title.length}, desc=${description.length}, mainImage=${mainImage ? 'yes' : 'no'}, carousel=${carouselImages.length}, cost=${totalCost}`);
+          send("done", { sellingPoints, title, description, mainImages, mainImage: mainImages[0] || "", carouselPlan, carouselImages, pointsUsed: totalCost, remainingPoints: newPoints });
+          console.log(`[Done] sellingPoints=${sellingPoints.length}, title=${title.length}, desc=${description.length}, mainImages=${mainImages.length}, carousel=${carouselImages.length}, cost=${totalCost}`);
         } catch (e) {
           console.error("generate-listing stream error:", e);
           const message = e instanceof Error ? e.message : "未知错误";
