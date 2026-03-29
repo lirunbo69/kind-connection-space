@@ -152,9 +152,11 @@ const MainImageGallery = ({ images, onImageClick }: { images?: string[]; onImage
 const CarouselGallery = ({
   plan,
   images,
+  onImageClick,
 }: {
   plan?: string[];
   images?: string[];
+  onImageClick: (url: string) => void;
 }) => (
   <div>
     <div className="flex items-center justify-between mb-2">
@@ -197,13 +199,16 @@ const CarouselGallery = ({
     {images && images.length > 0 ? (
       <div className="grid grid-cols-3 gap-2">
         {images.map((img, i) => (
-          <div key={i} className="relative group">
+          <div key={i} className="relative group cursor-pointer" onClick={() => onImageClick(img)}>
             <img src={img} alt={`轮播图 ${i + 1}`} className="w-full rounded-xl border border-white/40 object-contain bg-white shadow-sm hover:shadow-md transition-shadow" />
+            <div className="absolute inset-0 rounded-xl bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+              <ZoomIn className="w-5 h-5 text-white opacity-0 group-hover:opacity-80 transition-opacity drop-shadow-lg" />
+            </div>
             <Button
               variant="secondary"
               size="sm"
               className="absolute bottom-1 right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-              onClick={() => downloadImage(img, `carousel-${i + 1}.png`)}
+              onClick={(e) => { e.stopPropagation(); downloadImage(img, `carousel-${i + 1}.png`); }}
             >
               <Download className="w-3 h-3" />
             </Button>
