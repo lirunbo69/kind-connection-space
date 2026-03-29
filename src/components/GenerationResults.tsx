@@ -102,7 +102,7 @@ const CarouselGallery = ({
     {images && images.length > 0 ? (
       <div className="grid grid-cols-3 gap-2">
         {images.map((img, i) => (
-          <img key={i} src={img} alt={`轮播图 ${i + 1}`} className="w-full rounded-xl border border-white/40 object-cover aspect-square shadow-sm hover:shadow-md transition-shadow" />
+          <img key={i} src={img} alt={`轮播图 ${i + 1}`} className="w-full rounded-xl border border-white/40 object-contain bg-white shadow-sm hover:shadow-md transition-shadow" />
         ))}
       </div>
     ) : (
