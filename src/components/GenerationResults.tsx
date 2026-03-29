@@ -1,5 +1,7 @@
-import { CheckCircle, Copy, Clock, Image, Images, Download } from "lucide-react";
+import { useState } from "react";
+import { CheckCircle, Copy, Clock, Image, Images, Download, X, ZoomIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
 export interface ListingResult {
