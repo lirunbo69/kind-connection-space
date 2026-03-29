@@ -1,4 +1,4 @@
-import { CheckCircle, Copy, Clock, Image, Images } from "lucide-react";
+import { CheckCircle, Copy, Clock, Image, Images, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -9,6 +9,35 @@ export interface ListingResult {
   mainImage?: string;
   carouselPlan?: string[];
   carouselImages?: string[];
+}
+
+function downloadImage(dataUrl: string, filename: string) {
+  const link = document.createElement("a");
+  link.href = dataUrl;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+async function downloadAllImages(mainImage?: string, carouselImages?: string[]) {
+  const images: { url: string; name: string }[] = [];
+  if (mainImage) images.push({ url: mainImage, name: "main-image.png" });
+  if (carouselImages) {
+    carouselImages.forEach((img, i) => {
+      images.push({ url: img, name: `carousel-${i + 1}.png` });
+    });
+  }
+  if (images.length === 0) {
+    toast.error("没有可下载的图片");
+    return;
+  }
+  for (const img of images) {
+    downloadImage(img.url, img.name);
+    // Small delay between downloads to avoid browser blocking
+    await new Promise((r) => setTimeout(r, 300));
+  }
+  toast.success(`已下载 ${images.length} 张图片`);
 }
 
 const ResultSection = ({
@@ -58,9 +87,22 @@ const ResultSection = ({
 
 const ImagePlaceholder = ({ label, placeholder, image }: { label: string; placeholder: string; image?: string }) => (
   <div>
-    <div className="flex items-center gap-1.5 mb-2">
-      <Image className="w-4 h-4 text-muted-foreground" />
-      <span className="text-sm font-semibold text-foreground">{label}</span>
+    <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center gap-1.5">
+        <Image className="w-4 h-4 text-muted-foreground" />
+        <span className="text-sm font-semibold text-foreground">{label}</span>
+      </div>
+      {image && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-xs text-muted-foreground gap-1 h-7 hover:bg-white/50 rounded-lg"
+          onClick={() => downloadImage(image, "main-image.png")}
+        >
+          <Download className="w-3.5 h-3.5" />
+          下载
+        </Button>
+      )}
     </div>
     {image ? (
       <img src={image} alt={label} className="w-full rounded-xl border border-white/40 object-contain max-h-[400px] shadow-md bg-white" />
@@ -80,9 +122,27 @@ const CarouselGallery = ({
   images?: string[];
 }) => (
   <div>
-    <div className="flex items-center gap-1.5 mb-2">
-      <Images className="w-4 h-4 text-muted-foreground" />
-      <span className="text-sm font-semibold text-foreground">轮播图</span>
+    <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center gap-1.5">
+        <Images className="w-4 h-4 text-muted-foreground" />
+        <span className="text-sm font-semibold text-foreground">轮播图</span>
+      </div>
+      {images && images.length > 0 && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-xs text-muted-foreground gap-1 h-7 hover:bg-white/50 rounded-lg"
+          onClick={() => {
+            images.forEach((img, i) => {
+              setTimeout(() => downloadImage(img, `carousel-${i + 1}.png`), i * 300);
+            });
+            toast.success(`正在下载 ${images.length} 张轮播图`);
+          }}
+        >
+          <Download className="w-3.5 h-3.5" />
+          全部下载
+        </Button>
+      )}
     </div>
 
     {plan && plan.length > 0 && (
@@ -102,7 +162,17 @@ const CarouselGallery = ({
     {images && images.length > 0 ? (
       <div className="grid grid-cols-3 gap-2">
         {images.map((img, i) => (
-          <img key={i} src={img} alt={`轮播图 ${i + 1}`} className="w-full rounded-xl border border-white/40 object-contain bg-white shadow-sm hover:shadow-md transition-shadow" />
+          <div key={i} className="relative group">
+            <img src={img} alt={`轮播图 ${i + 1}`} className="w-full rounded-xl border border-white/40 object-contain bg-white shadow-sm hover:shadow-md transition-shadow" />
+            <Button
+              variant="secondary"
+              size="sm"
+              className="absolute bottom-1 right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+              onClick={() => downloadImage(img, `carousel-${i + 1}.png`)}
+            >
+              <Download className="w-3 h-3" />
+            </Button>
+          </div>
         ))}
       </div>
     ) : (
@@ -119,16 +189,30 @@ const CarouselGallery = ({
 
 const GenerationResults = ({ result }: { result: ListingResult | null }) => {
   const hasResult = !!result;
+  const hasAnyImage = !!(result?.mainImage || (result?.carouselImages && result.carouselImages.length > 0));
 
   return (
     <div className="glass-strong rounded-2xl p-6 animate-glass-reveal" style={{ animationDelay: "0.2s" }}>
-      <div className="flex items-center gap-2.5 mb-6">
-        {hasResult ? (
-          <CheckCircle className="w-5 h-5 text-emerald-500" />
-        ) : (
-          <Clock className="w-5 h-5 text-muted-foreground" />
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-2.5">
+          {hasResult ? (
+            <CheckCircle className="w-5 h-5 text-emerald-500" />
+          ) : (
+            <Clock className="w-5 h-5 text-muted-foreground" />
+          )}
+          <h2 className="text-lg font-semibold text-foreground">生成结果</h2>
+        </div>
+        {hasAnyImage && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-xs gap-1 h-8 rounded-lg"
+            onClick={() => downloadAllImages(result?.mainImage, result?.carouselImages)}
+          >
+            <Download className="w-3.5 h-3.5" />
+            批量下载全部图片
+          </Button>
         )}
-        <h2 className="text-lg font-semibold text-foreground">生成结果</h2>
       </div>
 
       <div className="space-y-5">
