@@ -65,7 +65,7 @@ const ImagePlaceholder = ({ label, placeholder, image }: { label: string; placeh
     {image ? (
       <img src={image} alt={label} className="w-full rounded-xl border border-white/40 object-contain max-h-[400px] shadow-md bg-white" />
     ) : (
-      <div className="rounded-xl border-2 border-dashed border-border/40 glass-subtle flex items-center justify-center h-[160px] text-sm text-muted-foreground">
+      <div className="rounded-xl border-2 border-dashed border-border/40 glass-subtle flex items-center justify-center h-[160px] text-sm text-muted-foreground font-sans">
         {placeholder}
       </div>
     )}
