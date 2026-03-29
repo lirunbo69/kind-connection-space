@@ -120,6 +120,7 @@ const Index = () => {
           language: fd.language,
           titleLimit: fd.titleLimit,
           imageCount: fd.imageCount,
+          aspectRatio: fd.aspectRatio || "1:1",
           templates: templates || [],
           whiteBgImages: fd.whiteBgImages || [],
           referenceImages: fd.referenceImages || [],
