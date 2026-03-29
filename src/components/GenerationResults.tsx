@@ -6,7 +6,8 @@ export interface ListingResult {
   title: string;
   sellingPoints: string[];
   description: string;
-  mainImage?: string;
+  mainImages?: string[];
+  mainImage?: string; // legacy compat
   carouselPlan?: string[];
   carouselImages?: string[];
 }
