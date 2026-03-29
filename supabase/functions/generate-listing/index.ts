@@ -203,9 +203,13 @@ serve(async (req) => {
     const body = await req.json();
     const {
       productName, productDescription, keywords, market, language,
-      titleLimit, imageCount, templates,
+      titleLimit, imageCount, aspectRatio, templates,
       whiteBgImages, referenceImages, hotSearchImages,
     } = body;
+
+    const ratio = aspectRatio === "3:4" ? "3:4" : "1:1";
+    const imageSize = ratio === "3:4" ? "1080x1440" : "1024x1024";
+    const imageSizeDesc = ratio === "3:4" ? "3:4 portrait (1080x1440px)" : "1:1 square (1024x1024px)";
 
     const imgCount_pre = Math.min(Math.max(parseInt(imageCount) || 3, 1), 6);
     const estimatedCost = ESTIMATED_TEXT_COST + ESTIMATED_IMAGE_COST * (1 + imgCount_pre);
