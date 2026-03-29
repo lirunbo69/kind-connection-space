@@ -163,7 +163,9 @@ function renderTemplate(template: string, vars: Record<string, string>): string 
   for (const [key, value] of Object.entries(vars)) {
     result = result.replace(new RegExp(`\\{\\{${key}\\}\\}`, "g"), value);
   }
-  return result;
+  // Remove any unreplaced template variables to avoid malformed prompts
+  result = result.replace(/\{\{[a-zA-Z_]+\}\}/g, "");
+  return result.trim();
 }
 
 serve(async (req) => {
