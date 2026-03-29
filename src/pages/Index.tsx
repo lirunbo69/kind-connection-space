@@ -85,8 +85,9 @@ const Index = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { toast.error("请先登录"); setIsLoading(false); return; }
       const { data: pts } = await supabase.from("user_points").select("remaining_points").eq("user_id", user.id).single();
-      const imgCount = Math.min(Math.max(parseInt(fd.imageCount) || 3, 1), 6);
-      const estimatedCost = 10 + 20 * (1 + imgCount);
+      const mainImgCount = Math.min(Math.max(parseInt(fd.mainImageCount) || 1, 1), 3);
+      const carouselImgCount = Math.min(Math.max(parseInt(fd.carouselImageCount) || 3, 1), 6);
+      const estimatedCost = 10 + 20 * (mainImgCount + carouselImgCount);
       if ((pts?.remaining_points ?? 0) < estimatedCost) {
         toast.error(`积分不足，预计消耗 ${estimatedCost} 积分，当前余额 ${pts?.remaining_points ?? 0}，请先充值`, { action: { label: "去充值", onClick: () => window.location.hash = "/topup" } });
         setIsLoading(false);
