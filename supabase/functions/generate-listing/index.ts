@@ -1,10 +1,14 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+const ESTIMATED_TEXT_COST = 10;
+const ESTIMATED_IMAGE_COST = 20;
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
@@ -171,12 +175,52 @@ serve(async (req) => {
     const apiKey = Deno.env.get("OPENROUTER_API_KEY");
     if (!apiKey) throw new Error("OPENROUTER_API_KEY is not configured");
 
+    // Authenticate user and check points
+    const authHeader = req.headers.get("Authorization");
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+
+    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader || "" } },
+    });
+    const { data: { user }, error: userError } = await userClient.auth.getUser();
+    if (userError || !user) {
+      return new Response(JSON.stringify({ error: "请先登录" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const adminClient = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Check remaining points
+    const { data: pointsData } = await adminClient
+      .from("user_points")
+      .select("remaining_points")
+      .eq("user_id", user.id)
+      .single();
+
     const body = await req.json();
     const {
       productName, productDescription, keywords, market, language,
       titleLimit, imageCount, templates,
       whiteBgImages, referenceImages, hotSearchImages,
     } = body;
+
+    const imgCount_pre = Math.min(Math.max(parseInt(imageCount) || 3, 1), 6);
+    const estimatedCost = ESTIMATED_TEXT_COST + ESTIMATED_IMAGE_COST * (1 + imgCount_pre);
+    const currentPoints = pointsData?.remaining_points ?? 0;
+
+    if (currentPoints < estimatedCost) {
+      return new Response(JSON.stringify({
+        error: `积分不足，预计消耗 ${estimatedCost} 积分，当前余额 ${currentPoints} 积分，请先充值`,
+        code: "INSUFFICIENT_POINTS",
+        required: estimatedCost,
+        current: currentPoints,
+      }), {
+        status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     if (!productName || !productDescription) {
       return new Response(
@@ -337,8 +381,27 @@ serve(async (req) => {
           send("result", { step: 5, data: { carouselImages } });
           send("step", { step: 5, status: "done" });
 
-          send("done", { sellingPoints, title, description, mainImage, carouselPlan, carouselImages });
-          console.log(`[Done] sellingPoints=${sellingPoints.length}, title=${title.length}, desc=${description.length}, mainImage=${mainImage ? 'yes' : 'no'}, carousel=${carouselImages.length}`);
+          // Deduct points after successful generation
+          const actualImageCount = (mainImage ? 1 : 0) + carouselImages.length;
+          const totalCost = ESTIMATED_TEXT_COST + ESTIMATED_IMAGE_COST * actualImageCount;
+          const newPoints = Math.max(0, currentPoints - totalCost);
+          await adminClient
+            .from("user_points")
+            .update({ remaining_points: newPoints, updated_at: new Date().toISOString() })
+            .eq("user_id", user.id);
+
+          // Log AI usage
+          await adminClient.from("ai_logs").insert({
+            user_id: user.id,
+            model_name: "openrouter-pipeline",
+            prompt_tokens: 0,
+            completion_tokens: 0,
+            image_count: actualImageCount,
+            points_cost: totalCost,
+          });
+
+          send("done", { sellingPoints, title, description, mainImage, carouselPlan, carouselImages, pointsUsed: totalCost, remainingPoints: newPoints });
+          console.log(`[Done] sellingPoints=${sellingPoints.length}, title=${title.length}, desc=${description.length}, mainImage=${mainImage ? 'yes' : 'no'}, carousel=${carouselImages.length}, cost=${totalCost}`);
         } catch (e) {
           console.error("generate-listing stream error:", e);
           const message = e instanceof Error ? e.message : "未知错误";
