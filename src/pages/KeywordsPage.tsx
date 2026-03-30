@@ -329,8 +329,36 @@ const KeywordsPage = () => {
             size="sm"
             className="h-8 text-xs gap-1.5"
             disabled={syncing}
-            onClick={() => {
-              toast.info("同步功能将在 Firecrawl 连接后启用");
+            onClick={async () => {
+              setSyncing(true);
+              toast.info("正在同步美客多热搜词，请稍候...");
+              try {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (!session) { toast.error("请先登录"); setSyncing(false); return; }
+                const { data, error } = await supabase.functions.invoke("sync-ml-keywords");
+                if (error) throw error;
+                if (data?.success) {
+                  toast.success(data.message || `成功同步 ${data.count} 个热搜词`);
+                  // Reload keywords
+                  let query = supabase.from("ml_hot_keywords").select("*").order("rank");
+                  if (selectedCat) query = query.eq("category_id", selectedCat);
+                  const { data: refreshed } = await query.limit(50);
+                  if (refreshed) {
+                    setKeywords(refreshed.map(k => ({
+                      ...k,
+                      trend_data: (k.trend_data as any) || [],
+                      product_images: (k.product_images as any) || [],
+                    })));
+                  }
+                } else {
+                  toast.error(data?.error || "同步失败");
+                }
+              } catch (e: any) {
+                console.error("Sync error:", e);
+                toast.error("同步失败: " + (e.message || "未知错误"));
+              } finally {
+                setSyncing(false);
+              }
             }}
           >
             {syncing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
