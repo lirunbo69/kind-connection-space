@@ -644,6 +644,14 @@ const KeywordsPage = () => {
           </div>
         )}
       </div>
+      {/* Trend Modal */}
+      <TrendModal
+        open={trendModalOpen}
+        onOpenChange={setTrendModalOpen}
+        keyword={trendModalKeyword?.keyword_es || ""}
+        keywordZh={trendModalKeyword?.keyword_zh}
+        data={trendModalData}
+      />
     </div>
   );
 };
