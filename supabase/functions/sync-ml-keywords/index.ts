@@ -254,6 +254,23 @@ Deno.serve(async (req) => {
       const trendBase = Math.floor(Math.random() * 1000) + 200;
       const trendData = Array.from({ length: 7 }, () => Math.max(0, trendBase + Math.floor(Math.random() * 400 - 200)));
 
+      // Generate 24-month simulated trend data
+      const now = new Date();
+      const monthlyStats = [];
+      let vol = Math.max(200, estimatedSearchVolume * (0.4 + Math.random() * 0.3));
+      for (let m = 23; m >= 0; m--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - m, 1);
+        const month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+        const seasonFactor = 1 + 0.25 * Math.sin((d.getMonth() / 12) * Math.PI * 2);
+        const noise = 0.85 + Math.random() * 0.3;
+        const trendGrowth = 1 + (23 - m) * 0.008;
+        vol = Math.round(vol * seasonFactor * noise * trendGrowth);
+        vol = Math.max(50, vol);
+        const prevVol = monthlyStats.length > 0 ? monthlyStats[monthlyStats.length - 1].search_volume : vol;
+        const growthRate = prevVol > 0 ? parseFloat((((vol - prevVol) / prevVol) * 100).toFixed(1)) : 0;
+        monthlyStats.push({ month, search_volume: vol, growth_rate: growthRate });
+      }
+
       return {
         rank: kw.rank || idx + 1,
         keyword_es: kw.keyword_es,
@@ -266,6 +283,7 @@ Deno.serve(async (req) => {
         conversion_rate: conversionRate,
         trend_data: trendData,
         product_images: kw.product_images || [],
+        keyword_monthly_stats: monthlyStats,
         updated_at: new Date().toISOString(),
       };
     });
