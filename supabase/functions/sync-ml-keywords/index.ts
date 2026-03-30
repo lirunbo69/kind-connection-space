@@ -143,8 +143,9 @@ ${markdown.slice(0, 15000)}`;
 
     try {
       const content = extractJson.choices?.[0]?.message?.content || "[]";
-      const parsed = JSON.parse(content);
-      rawKeywords = Array.isArray(parsed) ? parsed : parsed.keywords || parsed.data || [];
+      console.log("AI extraction raw (first 500):", content.slice(0, 500));
+      const parsed = extractJsonFromResponse(content);
+      rawKeywords = Array.isArray(parsed) ? parsed : (parsed as any).keywords || (parsed as any).data || [];
     } catch (e) {
       console.error("Failed to parse AI extraction:", e);
       return new Response(
