@@ -338,6 +338,140 @@ const KeywordsPage = () => {
           </Button>
         </div>
 
+        {/* Advanced Filter Panel */}
+        <div className="glass rounded-2xl mb-3 overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/30">
+            <div className="flex items-center gap-4">
+              <span className="text-sm font-semibold text-primary">推荐选品模式</span>
+              <span className="text-sm text-primary cursor-pointer hover:underline">自定义</span>
+            </div>
+            <button onClick={() => setFiltersOpen(!filtersOpen)} className="text-muted-foreground hover:text-foreground transition-colors">
+              {filtersOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+            </button>
+          </div>
+
+          {filtersOpen && (
+            <div className="px-4 py-3 space-y-3">
+              {/* Row 1: 类目, 评论数, 竞品数 */}
+              <div className="grid grid-cols-3 gap-x-8 gap-y-3">
+                {/* 类目 */}
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 shrink-0 w-16">
+                    <span className="text-xs font-medium text-foreground">类目</span>
+                    <Tooltip>
+                      <TooltipTrigger><HelpCircle className="w-3 h-3 text-muted-foreground" /></TooltipTrigger>
+                      <TooltipContent className="text-xs">选择美客多商品类目</TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Select value={filterCat} onValueChange={(v) => { setFilterCat(v); if (v !== "all") setSelectedCat(v); else setSelectedCat(null); }}>
+                    <SelectTrigger className="h-8 text-xs flex-1 bg-background/50">
+                      <SelectValue placeholder="类目及子类目" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">全部类目</SelectItem>
+                      {topCats.map(cat => (
+                        <SelectItem key={cat.id} value={cat.id}>{cat.name_zh}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* 评论数 */}
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 shrink-0 w-16">
+                    <span className="text-xs font-medium text-foreground">评论数</span>
+                    <Tooltip>
+                      <TooltipTrigger><HelpCircle className="w-3 h-3 text-muted-foreground" /></TooltipTrigger>
+                      <TooltipContent className="text-xs">按评论数量范围筛选</TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Input placeholder="最小值" value={reviewMin} onChange={e => setReviewMin(e.target.value)} className="h-8 text-xs bg-background/50 flex-1" type="number" />
+                  <span className="text-muted-foreground text-xs">-</span>
+                  <Input placeholder="最大值" value={reviewMax} onChange={e => setReviewMax(e.target.value)} className="h-8 text-xs bg-background/50 flex-1" type="number" />
+                </div>
+
+                {/* 竞品数 */}
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 shrink-0 w-16">
+                    <span className="text-xs font-medium text-foreground">竞品数</span>
+                    <Tooltip>
+                      <TooltipTrigger><HelpCircle className="w-3 h-3 text-muted-foreground" /></TooltipTrigger>
+                      <TooltipContent className="text-xs">按竞品商品数量范围筛选</TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Input placeholder="最小值" value={competitorMin} onChange={e => setCompetitorMin(e.target.value)} className="h-8 text-xs bg-background/50 flex-1" type="number" />
+                  <span className="text-muted-foreground text-xs">-</span>
+                  <Input placeholder="最大值" value={competitorMax} onChange={e => setCompetitorMax(e.target.value)} className="h-8 text-xs bg-background/50 flex-1" type="number" />
+                </div>
+              </div>
+
+              {/* Row 2: 销售额, 评分, 标签词 */}
+              <div className="grid grid-cols-3 gap-x-8 gap-y-3">
+                {/* 销售额 */}
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 shrink-0 w-16">
+                    <span className="text-xs font-medium text-foreground">销售额</span>
+                    <Tooltip>
+                      <TooltipTrigger><HelpCircle className="w-3 h-3 text-muted-foreground" /></TooltipTrigger>
+                      <TooltipContent className="text-xs">按销售额范围筛选(MXN)</TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Input placeholder="最小值" value={salesMin} onChange={e => setSalesMin(e.target.value)} className="h-8 text-xs bg-background/50 flex-1" type="number" />
+                  <span className="text-muted-foreground text-xs">-</span>
+                  <Input placeholder="最大值" value={salesMax} onChange={e => setSalesMax(e.target.value)} className="h-8 text-xs bg-background/50 flex-1" type="number" />
+                </div>
+
+                {/* 评分 */}
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 shrink-0 w-16">
+                    <span className="text-xs font-medium text-foreground">评分</span>
+                    <Tooltip>
+                      <TooltipTrigger><HelpCircle className="w-3 h-3 text-muted-foreground" /></TooltipTrigger>
+                      <TooltipContent className="text-xs">按转化率/评分范围筛选</TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Input placeholder="最小值" value={ratingMin} onChange={e => setRatingMin(e.target.value)} className="h-8 text-xs bg-background/50 flex-1" type="number" />
+                  <span className="text-muted-foreground text-xs">-</span>
+                  <Input placeholder="最大值" value={ratingMax} onChange={e => setRatingMax(e.target.value)} className="h-8 text-xs bg-background/50 flex-1" type="number" />
+                </div>
+
+                {/* 标签词 */}
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 shrink-0 w-16">
+                    <span className="text-xs font-medium text-foreground">标签词</span>
+                    <Tooltip>
+                      <TooltipTrigger><HelpCircle className="w-3 h-3 text-muted-foreground" /></TooltipTrigger>
+                      <TooltipContent className="text-xs">按标签关键词筛选</TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Select value={tagMatchType} onValueChange={setTagMatchType}>
+                    <SelectTrigger className="h-8 text-xs w-20 bg-background/50">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="精准">精准</SelectItem>
+                      <SelectItem value="模糊">模糊</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Input placeholder="标签词" value={tagKeyword} onChange={e => setTagKeyword(e.target.value)} className="h-8 text-xs bg-background/50 flex-1" />
+                </div>
+              </div>
+
+              {/* Action Row */}
+              <div className="flex items-center justify-end gap-3 pt-1">
+                <span className="text-xs text-primary cursor-pointer hover:underline mr-auto">保存当前模式</span>
+                <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5 border-primary text-primary hover:bg-primary/5" onClick={handleReset}>
+                  <RotateCcw className="w-3 h-3" /> 重置
+                </Button>
+                <Button size="sm" className="h-8 text-xs gap-1.5 bg-primary hover:bg-primary/90" onClick={handleQuery}>
+                  <Search className="w-3 h-3" /> 查询
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Loading state */}
         {loading ? (
           <div className="flex-1 glass rounded-2xl flex items-center justify-center">
