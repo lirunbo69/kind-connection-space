@@ -6,6 +6,32 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+function extractJsonFromResponse(response: string): unknown {
+  let cleaned = response
+    .replace(/```json\s*/gi, "")
+    .replace(/```\s*/g, "")
+    .trim();
+
+  const jsonStart = cleaned.search(/[\{\[]/);
+  if (jsonStart === -1) throw new Error("No JSON found in response");
+  const openChar = cleaned[jsonStart];
+  const closeChar = openChar === '[' ? ']' : '}';
+  const jsonEnd = cleaned.lastIndexOf(closeChar);
+  if (jsonEnd === -1) throw new Error("No closing JSON bracket found");
+
+  cleaned = cleaned.substring(jsonStart, jsonEnd + 1);
+
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    cleaned = cleaned
+      .replace(/,\s*}/g, "}")
+      .replace(/,\s*]/g, "]")
+      .replace(/[\x00-\x1F\x7F]/g, "");
+    return JSON.parse(cleaned);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -117,8 +143,9 @@ ${markdown.slice(0, 15000)}`;
 
     try {
       const content = extractJson.choices?.[0]?.message?.content || "[]";
-      const parsed = JSON.parse(content);
-      rawKeywords = Array.isArray(parsed) ? parsed : parsed.keywords || parsed.data || [];
+      console.log("AI extraction raw (first 500):", content.slice(0, 500));
+      const parsed = extractJsonFromResponse(content);
+      rawKeywords = Array.isArray(parsed) ? parsed : (parsed as any).keywords || (parsed as any).data || [];
     } catch (e) {
       console.error("Failed to parse AI extraction:", e);
       return new Response(
@@ -224,8 +251,8 @@ ${JSON.stringify(spanishKeywords)}`;
 
     try {
       const content = translateJson.choices?.[0]?.message?.content || "[]";
-      const parsed = JSON.parse(content);
-      chineseKeywords = Array.isArray(parsed) ? parsed : parsed.translations || parsed.keywords || [];
+      const parsed = extractJsonFromResponse(content);
+      chineseKeywords = Array.isArray(parsed) ? parsed as string[] : (parsed as any).translations || (parsed as any).keywords || [];
     } catch {
       console.error("Translation parsing failed, using empty translations");
       chineseKeywords = spanishKeywords.map(() => "");
