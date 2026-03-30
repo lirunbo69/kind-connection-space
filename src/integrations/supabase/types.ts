@@ -134,6 +134,106 @@ export type Database = {
         }
         Relationships: []
       }
+      ml_categories: {
+        Row: {
+          created_at: string | null
+          id: string
+          level: number
+          name_es: string
+          name_zh: string
+          parent_id: string | null
+          slug: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          level?: number
+          name_es: string
+          name_zh: string
+          parent_id?: string | null
+          slug: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          level?: number
+          name_es?: string
+          name_zh?: string
+          parent_id?: string | null
+          slug?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ml_categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "ml_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ml_hot_keywords: {
+        Row: {
+          avg_price: number | null
+          category_id: string | null
+          conversion_rate: number | null
+          created_at: string | null
+          id: string
+          keyword_es: string
+          keyword_zh: string | null
+          product_count: number | null
+          product_images: Json | null
+          rank: number
+          revenue: number | null
+          sales_30d: number | null
+          supply_demand_ratio: number | null
+          trend_data: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          avg_price?: number | null
+          category_id?: string | null
+          conversion_rate?: number | null
+          created_at?: string | null
+          id?: string
+          keyword_es: string
+          keyword_zh?: string | null
+          product_count?: number | null
+          product_images?: Json | null
+          rank: number
+          revenue?: number | null
+          sales_30d?: number | null
+          supply_demand_ratio?: number | null
+          trend_data?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          avg_price?: number | null
+          category_id?: string | null
+          conversion_rate?: number | null
+          created_at?: string | null
+          id?: string
+          keyword_es?: string
+          keyword_zh?: string | null
+          product_count?: number | null
+          product_images?: Json | null
+          rank?: number
+          revenue?: number | null
+          sales_30d?: number | null
+          supply_demand_ratio?: number | null
+          trend_data?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ml_hot_keywords_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "ml_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       page_views: {
         Row: {
           created_at: string
