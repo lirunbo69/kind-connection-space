@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { ChevronRight, ChevronDown, Search, TrendingUp, Download, RefreshCw, ArrowUpDown, ArrowUp, ArrowDown, Package, Loader2, ChevronUp, Filter, RotateCcw, HelpCircle } from "lucide-react";
+import TrendModal, { generateMockMonthlyStats, type MonthlyStatPoint } from "@/components/TrendModal";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -77,6 +78,9 @@ const KeywordsPage = () => {
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [syncing, setSyncing] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(true);
+  const [trendModalOpen, setTrendModalOpen] = useState(false);
+  const [trendModalKeyword, setTrendModalKeyword] = useState<HotKeyword | null>(null);
+  const [trendModalData, setTrendModalData] = useState<MonthlyStatPoint[]>([]);
   
   // Advanced filter states
   const [filterCat, setFilterCat] = useState<string>("all");
@@ -589,7 +593,21 @@ const KeywordsPage = () => {
                           </div>
                         </td>
                         <td className="px-3 py-2.5">
-                          <Sparkline data={kw.trend_data as number[]} />
+                          <button
+                            className="cursor-pointer hover:opacity-75 transition-opacity"
+                            onClick={() => {
+                              const stats = (kw as any).keyword_monthly_stats;
+                              const monthlyData: MonthlyStatPoint[] =
+                                Array.isArray(stats) && stats.length > 0
+                                  ? stats
+                                  : generateMockMonthlyStats(kw.sales_30d ?? 1000);
+                              setTrendModalKeyword(kw);
+                              setTrendModalData(monthlyData);
+                              setTrendModalOpen(true);
+                            }}
+                          >
+                            <Sparkline data={kw.trend_data as number[]} />
+                          </button>
                         </td>
                         <td className="px-3 py-2.5 text-right font-mono text-foreground">
                           {kw.avg_price != null ? `$${Number(kw.avg_price).toLocaleString()}` : "—"}
@@ -626,6 +644,14 @@ const KeywordsPage = () => {
           </div>
         )}
       </div>
+      {/* Trend Modal */}
+      <TrendModal
+        open={trendModalOpen}
+        onOpenChange={setTrendModalOpen}
+        keyword={trendModalKeyword?.keyword_es || ""}
+        keywordZh={trendModalKeyword?.keyword_zh}
+        data={trendModalData}
+      />
     </div>
   );
 };
