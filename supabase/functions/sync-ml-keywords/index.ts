@@ -15,7 +15,7 @@ function extractJsonFromResponse(response: string): unknown {
   const jsonStart = cleaned.search(/[\{\[]/);
   if (jsonStart === -1) throw new Error("No JSON found in response");
   const openChar = cleaned[jsonStart];
-  const closeChar = openChar === '[' ? ']' : '}';
+  const closeChar = openChar === "[" ? "]" : "}";
   const jsonEnd = cleaned.lastIndexOf(closeChar);
   if (jsonEnd === -1) throw new Error("No closing JSON bracket found");
 
@@ -32,13 +32,52 @@ function extractJsonFromResponse(response: string): unknown {
   }
 }
 
+async function callGeminiJson(prompt: string) {
+  const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
+  if (!geminiApiKey) {
+    throw new Error("GEMINI_API_KEY not configured");
+  }
+
+  const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`;
+  const response = await fetch(geminiUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      contents: [
+        {
+          role: "user",
+          parts: [{ text: prompt }],
+        },
+      ],
+      generationConfig: {
+        responseMimeType: "application/json",
+        temperature: 0.2,
+      },
+    }),
+  });
+
+  const responseText = await response.text();
+  if (!response.ok) {
+    throw new Error(`Gemini API error (${response.status}): ${responseText.slice(0, 300)}`);
+  }
+
+  const data = JSON.parse(responseText);
+  const content = data.candidates?.[0]?.content?.parts?.map((part: { text?: string }) => part.text || "").join("") || "";
+  if (!content) {
+    throw new Error("Gemini returned empty content");
+  }
+
+  return extractJsonFromResponse(content);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // ── Auth ──
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -64,23 +103,16 @@ Deno.serve(async (req) => {
 
     const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
     if (!firecrawlKey) {
-      return new Response(
-        JSON.stringify({ error: "Firecrawl connector not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Firecrawl connector not configured" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
-    if (!lovableApiKey) {
-      return new Response(
-        JSON.stringify({ error: "LOVABLE_API_KEY not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const adminSupabase = createClient(supabaseUrl, serviceRoleKey);
 
-    // ── Step 1: Scrape the trends page ──
     console.log("Scraping tendencias.mercadolibre.com.mx ...");
-
     const scrapeRes = await fetch("https://api.firecrawl.dev/v1/scrape", {
       method: "POST",
       headers: {
@@ -95,21 +127,20 @@ Deno.serve(async (req) => {
       }),
     });
 
-    const scrapeData = await scrapeRes.json();
+    const scrapeText = await scrapeRes.text();
+    const scrapeData = JSON.parse(scrapeText);
     if (!scrapeRes.ok) {
       console.error("Firecrawl scrape error:", scrapeData);
-      return new Response(
-        JSON.stringify({ error: "Failed to scrape trends page", detail: scrapeData }),
-        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Failed to scrape trends page", detail: scrapeData }), {
+        status: 502,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const markdown = scrapeData.data?.markdown || scrapeData.markdown || "";
     console.log("Scraped markdown length:", markdown.length);
 
-    // ── Step 2: Use AI to extract structured keyword data from the markdown ──
     console.log("Extracting keywords with AI ...");
-
     const extractPrompt = `You are a data extraction expert. From the following markdown content scraped from Mercado Libre Mexico's trending page, extract ALL trending/hot search keywords.
 
 Return a JSON array where each item has:
@@ -119,54 +150,28 @@ Return a JSON array where each item has:
 
 IMPORTANT: Extract ALL keywords you can find. Look for numbered lists, trending terms, popular searches, etc.
 If you cannot determine the exact rank, assign sequential numbers starting from 1.
-
-Return ONLY a valid JSON array, no other text.
+Return ONLY valid JSON.
 
 Markdown content:
 ${markdown.slice(0, 15000)}`;
 
-    const extractRes = await fetch("https://api.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${lovableApiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [{ role: "user", content: extractPrompt }],
-        response_format: { type: "json_object" },
-      }),
-    });
-
-    const extractJson = await extractRes.json();
-    let rawKeywords: { rank: number; keyword_es: string; url?: string | null }[] = [];
-
-    try {
-      const content = extractJson.choices?.[0]?.message?.content || "[]";
-      console.log("AI extraction raw (first 500):", content.slice(0, 500));
-      const parsed = extractJsonFromResponse(content);
-      rawKeywords = Array.isArray(parsed) ? parsed : (parsed as any).keywords || (parsed as any).data || [];
-    } catch (e) {
-      console.error("Failed to parse AI extraction:", e);
-      return new Response(
-        JSON.stringify({ error: "AI extraction failed", detail: String(e) }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    const extracted = await callGeminiJson(extractPrompt);
+    const rawKeywords = Array.isArray(extracted)
+      ? extracted as { rank: number; keyword_es: string; url?: string | null }[]
+      : ((extracted as { keywords?: { rank: number; keyword_es: string; url?: string | null }[]; data?: { rank: number; keyword_es: string; url?: string | null }[] }).keywords
+          || (extracted as { data?: { rank: number; keyword_es: string; url?: string | null }[] }).data
+          || []);
 
     if (rawKeywords.length === 0) {
-      return new Response(
-        JSON.stringify({ error: "No keywords found on the page", markdown_preview: markdown.slice(0, 500) }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "No keywords found on the page", markdown_preview: markdown.slice(0, 500) }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     console.log(`Extracted ${rawKeywords.length} keywords`);
 
-    // ── Step 3: For each keyword, try to scrape detail page for product count ──
-    const keywordsWithCounts: typeof rawKeywords & { product_count?: number }[] = [];
-
-    // Scrape up to 10 detail pages to avoid rate limits
+    const keywordsWithCounts: Array<{ rank: number; keyword_es: string; url?: string | null; product_count?: number | null }> = [];
     const detailLimit = Math.min(rawKeywords.length, 10);
 
     for (let i = 0; i < rawKeywords.length; i++) {
@@ -175,10 +180,7 @@ ${markdown.slice(0, 15000)}`;
 
       if (i < detailLimit && kw.url) {
         try {
-          const detailUrl = kw.url.startsWith("http")
-            ? kw.url
-            : `https://tendencias.mercadolibre.com.mx${kw.url}`;
-
+          const detailUrl = kw.url.startsWith("http") ? kw.url : `https://tendencias.mercadolibre.com.mx${kw.url}`;
           console.log(`Scraping detail for: ${kw.keyword_es}`);
 
           const detailRes = await fetch("https://api.firecrawl.dev/v1/scrape", {
@@ -195,15 +197,14 @@ ${markdown.slice(0, 15000)}`;
             }),
           });
 
+          const detailText = await detailRes.text();
           if (detailRes.ok) {
-            const detailData = await detailRes.json();
+            const detailData = JSON.parse(detailText);
             const detailMd = detailData.data?.markdown || detailData.markdown || "";
-
-            // Try to extract product count from detail page using regex patterns
             const countPatterns = [
-              /(\d[\d,\.]*)\s*resultados?/i,
-              /(\d[\d,\.]*)\s*productos?/i,
-              /(\d[\d,\.]*)\s*results?/i,
+              /(\d[\d,.]*)\s*resultados?/i,
+              /(\d[\d,.]*)\s*productos?/i,
+              /(\d[\d,.]*)\s*results?/i,
             ];
 
             for (const pattern of countPatterns) {
@@ -213,8 +214,6 @@ ${markdown.slice(0, 15000)}`;
                 break;
               }
             }
-          } else {
-            await detailRes.text(); // consume body
           }
         } catch (e) {
           console.error(`Detail scrape failed for ${kw.keyword_es}:`, e);
@@ -224,48 +223,24 @@ ${markdown.slice(0, 15000)}`;
       keywordsWithCounts.push({ ...kw, product_count: productCount });
     }
 
-    // ── Step 4: AI translate all keywords to Chinese ──
     console.log("Translating keywords to Chinese ...");
-
     const spanishKeywords = keywordsWithCounts.map((k) => k.keyword_es);
-    const translatePrompt = `Translate the following Spanish keywords to Chinese. Return a JSON array of strings in the same order. Only return the JSON array, no other text.
+    const translatePrompt = `Translate the following Spanish keywords to Simplified Chinese. Return a JSON array of strings in the same order. Return ONLY valid JSON.\n\nKeywords:\n${JSON.stringify(spanishKeywords)}`;
+    const translated = await callGeminiJson(translatePrompt);
+    const chineseKeywords = Array.isArray(translated)
+      ? translated as string[]
+      : ((translated as { translations?: string[]; keywords?: string[] }).translations || (translated as { keywords?: string[] }).keywords || spanishKeywords.map(() => ""));
 
-Keywords:
-${JSON.stringify(spanishKeywords)}`;
-
-    const translateRes = await fetch("https://api.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${lovableApiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [{ role: "user", content: translatePrompt }],
-        response_format: { type: "json_object" },
-      }),
-    });
-
-    const translateJson = await translateRes.json();
-    let chineseKeywords: string[] = [];
-
-    try {
-      const content = translateJson.choices?.[0]?.message?.content || "[]";
-      const parsed = extractJsonFromResponse(content);
-      chineseKeywords = Array.isArray(parsed) ? parsed as string[] : (parsed as any).translations || (parsed as any).keywords || [];
-    } catch {
-      console.error("Translation parsing failed, using empty translations");
-      chineseKeywords = spanishKeywords.map(() => "");
-    }
-
-    // ── Step 5: Calculate metrics and build final records ──
     console.log("Calculating metrics ...");
 
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const adminSupabase = createClient(supabaseUrl, serviceRoleKey);
+    const { error: deleteError } = await adminSupabase
+      .from("ml_hot_keywords")
+      .delete()
+      .neq("id", "00000000-0000-0000-0000-000000000000");
 
-    // Clear existing keywords
-    await adminSupabase.from("ml_hot_keywords").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+    if (deleteError) {
+      console.error("Delete error:", deleteError);
+    }
 
     const records = keywordsWithCounts.map((kw, idx) => {
       const productCount = kw.product_count || Math.floor(Math.random() * 5000) + 100;
@@ -275,12 +250,8 @@ ${JSON.stringify(spanishKeywords)}`;
       const sales30d = Math.floor(Math.random() * 3000) + 100;
       const revenue = parseFloat((avgPrice * sales30d).toFixed(2));
       const conversionRate = parseFloat((Math.random() * 15 + 1).toFixed(2));
-
-      // Generate 7-day trend data
       const trendBase = Math.floor(Math.random() * 1000) + 200;
-      const trendData = Array.from({ length: 7 }, () =>
-        Math.max(0, trendBase + Math.floor(Math.random() * 400 - 200))
-      );
+      const trendData = Array.from({ length: 7 }, () => Math.max(0, trendBase + Math.floor(Math.random() * 400 - 200)));
 
       return {
         rank: kw.rank || idx + 1,
@@ -290,7 +261,7 @@ ${JSON.stringify(spanishKeywords)}`;
         supply_demand_ratio: supplyDemandRatio,
         avg_price: avgPrice,
         sales_30d: sales30d,
-        revenue: revenue,
+        revenue,
         conversion_rate: conversionRate,
         trend_data: trendData,
         product_images: [],
@@ -298,7 +269,6 @@ ${JSON.stringify(spanishKeywords)}`;
       };
     });
 
-    // Insert in batches
     const batchSize = 20;
     let inserted = 0;
     for (let i = 0; i < records.length; i += batchSize) {
@@ -312,20 +282,14 @@ ${JSON.stringify(spanishKeywords)}`;
     }
 
     console.log(`Successfully synced ${inserted} keywords`);
-
-    return new Response(
-      JSON.stringify({
-        success: true,
-        count: inserted,
-        message: `成功同步 ${inserted} 个热搜词`,
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ success: true, count: inserted, message: `成功同步 ${inserted} 个热搜词` }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (error) {
     console.error("Sync error:", error);
-    return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
