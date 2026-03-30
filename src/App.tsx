@@ -20,6 +20,7 @@ const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const ChatPage = lazy(() => import("./pages/ChatPage"));
 const AdminPage = lazy(() => import("./pages/AdminPage"));
 
+const KeywordsPage = lazy(() => import("./pages/KeywordsPage"));
 const TopupPage = lazy(() => import("./pages/TopupPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -38,6 +39,7 @@ const AppLayout = () => {
           <Route path="/chat" element={<ChatPage />} />
           <Route path="/batch" element={<BatchPage />} />
           <Route path="/analysis" element={<CompetitorPage />} />
+          <Route path="/keywords" element={<KeywordsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/topup" element={<TopupPage />} />
           
