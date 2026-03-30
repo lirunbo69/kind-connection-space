@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { ChevronRight, ChevronDown, Search, TrendingUp, Download, RefreshCw, ArrowUpDown, ArrowUp, ArrowDown, Package, Loader2 } from "lucide-react";
+import { ChevronRight, ChevronDown, Search, TrendingUp, Download, RefreshCw, ArrowUpDown, ArrowUp, ArrowDown, Package, Loader2, ChevronUp, Filter, RotateCcw, HelpCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
