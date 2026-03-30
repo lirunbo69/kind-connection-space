@@ -251,8 +251,8 @@ ${JSON.stringify(spanishKeywords)}`;
 
     try {
       const content = translateJson.choices?.[0]?.message?.content || "[]";
-      const parsed = JSON.parse(content);
-      chineseKeywords = Array.isArray(parsed) ? parsed : parsed.translations || parsed.keywords || [];
+      const parsed = extractJsonFromResponse(content);
+      chineseKeywords = Array.isArray(parsed) ? parsed as string[] : (parsed as any).translations || (parsed as any).keywords || [];
     } catch {
       console.error("Translation parsing failed, using empty translations");
       chineseKeywords = spanishKeywords.map(() => "");
