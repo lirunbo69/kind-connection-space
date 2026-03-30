@@ -593,7 +593,21 @@ const KeywordsPage = () => {
                           </div>
                         </td>
                         <td className="px-3 py-2.5">
-                          <Sparkline data={kw.trend_data as number[]} />
+                          <button
+                            className="cursor-pointer hover:opacity-75 transition-opacity"
+                            onClick={() => {
+                              const stats = (kw as any).keyword_monthly_stats;
+                              const monthlyData: MonthlyStatPoint[] =
+                                Array.isArray(stats) && stats.length > 0
+                                  ? stats
+                                  : generateMockMonthlyStats(kw.sales_30d ?? 1000);
+                              setTrendModalKeyword(kw);
+                              setTrendModalData(monthlyData);
+                              setTrendModalOpen(true);
+                            }}
+                          >
+                            <Sparkline data={kw.trend_data as number[]} />
+                          </button>
                         </td>
                         <td className="px-3 py-2.5 text-right font-mono text-foreground">
                           {kw.avg_price != null ? `$${Number(kw.avg_price).toLocaleString()}` : "—"}
