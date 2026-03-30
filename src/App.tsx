@@ -39,6 +39,7 @@ const AppLayout = () => {
           <Route path="/chat" element={<ChatPage />} />
           <Route path="/batch" element={<BatchPage />} />
           <Route path="/analysis" element={<CompetitorPage />} />
+          <Route path="/keywords" element={<KeywordsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/topup" element={<TopupPage />} />
           
