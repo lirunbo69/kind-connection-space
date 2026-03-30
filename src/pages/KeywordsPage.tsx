@@ -76,6 +76,39 @@ const KeywordsPage = () => {
   const [sortField, setSortField] = useState<SortField>("rank");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [syncing, setSyncing] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(true);
+  
+  // Advanced filter states
+  const [filterCat, setFilterCat] = useState<string>("all");
+  const [reviewMin, setReviewMin] = useState("");
+  const [reviewMax, setReviewMax] = useState("");
+  const [competitorMin, setCompetitorMin] = useState("");
+  const [competitorMax, setCompetitorMax] = useState("");
+  const [salesMin, setSalesMin] = useState("");
+  const [salesMax, setSalesMax] = useState("");
+  const [ratingMin, setRatingMin] = useState("");
+  const [ratingMax, setRatingMax] = useState("");
+  const [tagMatchType, setTagMatchType] = useState<string>("精准");
+  const [tagKeyword, setTagKeyword] = useState("");
+
+  const handleReset = () => {
+    setFilterCat("all");
+    setReviewMin(""); setReviewMax("");
+    setCompetitorMin(""); setCompetitorMax("");
+    setSalesMin(""); setSalesMax("");
+    setRatingMin(""); setRatingMax("");
+    setTagMatchType("精准"); setTagKeyword("");
+    setSelectedCat(null);
+    setSearchTerm("");
+  };
+
+  const handleQuery = () => {
+    // Apply category filter
+    if (filterCat && filterCat !== "all") {
+      setSelectedCat(filterCat);
+    }
+    toast.success("筛选条件已应用");
+  };
 
   // Load categories
   useEffect(() => {
