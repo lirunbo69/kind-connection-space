@@ -355,7 +355,16 @@ const KeywordsPage = () => {
                 }
               } catch (e: any) {
                 console.error("Sync error:", e);
-                toast.error("同步失败: " + (e.message || "未知错误"));
+                let errorMessage = e?.message || "未知错误";
+                if (e?.context && typeof e.context.json === "function") {
+                  try {
+                    const payload = await e.context.json();
+                    errorMessage = payload?.error || errorMessage;
+                  } catch {
+                    // ignore response parsing errors
+                  }
+                }
+                toast.error("同步失败: " + errorMessage);
               } finally {
                 setSyncing(false);
               }
