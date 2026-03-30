@@ -78,6 +78,9 @@ const KeywordsPage = () => {
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [syncing, setSyncing] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(true);
+  const [trendModalOpen, setTrendModalOpen] = useState(false);
+  const [trendModalKeyword, setTrendModalKeyword] = useState<HotKeyword | null>(null);
+  const [trendModalData, setTrendModalData] = useState<MonthlyStatPoint[]>([]);
   
   // Advanced filter states
   const [filterCat, setFilterCat] = useState<string>("all");
