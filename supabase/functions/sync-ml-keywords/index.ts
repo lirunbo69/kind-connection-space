@@ -6,103 +6,87 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+/** Extract keywords from markdown using regex – no AI needed */
+function extractKeywordsFromMarkdown(markdown: string): Array<{ rank: number; keyword_es: string; url: string | null; images: string[] }> {
+  const results: Array<{ rank: number; keyword_es: string; url: string | null; images: string[] }> = [];
 
-class HttpError extends Error {
-  status: number;
+  // Pattern: **Keyword**](url) preceded by Nº ... CRECIMIENTO or similar ranking text
+  // The markdown block for each keyword looks like:
+  //   [![img alt](imgUrl)\\ ... Nº MAYOR CRECIMIENTO\\ \\ **Keyword**](listUrl)
+  const blockPattern = /\[.*?(\d+)º\s*(?:MAYOR CRECIMIENTO|MÁS (?:DESEADA|BUSCADA)).*?\*\*([^*]+)\*\*\]\(([^)]+)\)/gs;
 
-  constructor(status: number, message: string) {
-    super(message);
-    this.status = status;
-    this.name = "HttpError";
+  let match: RegExpExecArray | null;
+  while ((match = blockPattern.exec(markdown)) !== null) {
+    const rank = parseInt(match[1], 10);
+    const keyword = match[2].trim();
+    const url = match[3].trim();
+
+    // Extract product images from the same block
+    const blockStart = markdown.lastIndexOf("[![", match.index + 1) !== -1
+      ? markdown.lastIndexOf("[", match.index)
+      : match.index;
+    const blockText = markdown.substring(Math.max(0, blockStart - 500), match.index + match[0].length);
+    const imgPattern = /https?:\/\/http2\.mlstatic\.com\/[^\s)]+/g;
+    const images: string[] = [];
+    let imgMatch: RegExpExecArray | null;
+    while ((imgMatch = imgPattern.exec(blockText)) !== null) {
+      images.push(imgMatch[0]);
+    }
+
+    // Avoid duplicates (same keyword from different sections)
+    if (!results.find(r => r.keyword_es.toLowerCase() === keyword.toLowerCase())) {
+      results.push({ rank: results.length + 1, keyword_es: keyword, url, images });
+    }
   }
+
+  return results;
 }
 
-function extractJsonFromResponse(response: string): unknown {
-  let cleaned = response
-    .replace(/```json\s*/gi, "")
-    .replace(/```\s*/g, "")
-    .trim();
-
-  const jsonStart = cleaned.search(/[\{\[]/);
-  if (jsonStart === -1) throw new Error("No JSON found in response");
-  const openChar = cleaned[jsonStart];
-  const closeChar = openChar === "[" ? "]" : "}";
-  const jsonEnd = cleaned.lastIndexOf(closeChar);
-  if (jsonEnd === -1) throw new Error("No closing JSON bracket found");
-
-  cleaned = cleaned.substring(jsonStart, jsonEnd + 1);
+/** Translate Spanish keywords to Chinese using Lovable AI Gateway (non-blocking, best-effort) */
+async function translateKeywords(keywords: string[]): Promise<string[]> {
+  const apiKey = Deno.env.get("LOVABLE_API_KEY");
+  if (!apiKey || keywords.length === 0) return keywords.map(() => "");
 
   try {
-    return JSON.parse(cleaned);
-  } catch {
-    cleaned = cleaned
-      .replace(/,\s*}/g, "}")
-      .replace(/,\s*]/g, "]")
-      .replace(/[\x00-\x1F\x7F]/g, "");
-    return JSON.parse(cleaned);
-  }
-}
-
-async function callGeminiJson(prompt: string) {
-  const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
-  if (!geminiApiKey) {
-    throw new Error("GEMINI_API_KEY not configured");
-  }
-
-  const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`;
-  const maxRetries = 4;
-  let delay = 1200;
-
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    const response = await fetch(geminiUrl, {
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
+        Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        contents: [
+        model: "google/gemini-2.5-flash-lite",
+        messages: [
+          {
+            role: "system",
+            content: "You are a translator. Translate Spanish product keywords to Simplified Chinese. Return ONLY a JSON array of strings in the same order, no extra text.",
+          },
           {
             role: "user",
-            parts: [{ text: prompt }],
+            content: JSON.stringify(keywords),
           },
         ],
-        generationConfig: {
-          responseMimeType: "application/json",
-          temperature: 0.2,
-        },
       }),
     });
 
-    const responseText = await response.text();
-
-    if (response.ok) {
-      const data = JSON.parse(responseText);
-      const content = data.candidates?.[0]?.content?.parts?.map((part: { text?: string }) => part.text || "").join("") || "";
-      if (!content) {
-        throw new Error("Gemini returned empty content");
-      }
-
-      return extractJsonFromResponse(content);
+    if (!response.ok) {
+      console.warn(`Translation API returned ${response.status}, skipping translation`);
+      return keywords.map(() => "");
     }
 
-    if (response.status === 429) {
-      console.warn(`Gemini rate limited (attempt ${attempt + 1}/${maxRetries + 1}): ${responseText}`);
-
-      if (attempt < maxRetries) {
-        const jitter = Math.floor(Math.random() * 500);
-        await sleep(delay + jitter);
-        delay *= 2;
-        continue;
-      }
-
-      throw new HttpError(429, "AI 服务请求过于频繁，请稍后再试");
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content || "";
+    // Strip markdown fences if present
+    const cleaned = content.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+    const parsed = JSON.parse(cleaned);
+    if (Array.isArray(parsed) && parsed.length === keywords.length) {
+      return parsed as string[];
     }
-
-    throw new HttpError(502, `AI 服务错误 (${response.status})`);
+    return keywords.map(() => "");
+  } catch (e) {
+    console.warn("Translation failed (non-blocking):", e);
+    return keywords.map(() => "");
   }
-
-  throw new HttpError(429, "AI 服务请求过于频繁，请稍后再试");
 }
 
 Deno.serve(async (req) => {
@@ -173,28 +157,8 @@ Deno.serve(async (req) => {
     const markdown = scrapeData.data?.markdown || scrapeData.markdown || "";
     console.log("Scraped markdown length:", markdown.length);
 
-    console.log("Extracting keywords with AI ...");
-    const extractPrompt = `You are a data extraction expert. From the following markdown content scraped from Mercado Libre Mexico's trending page, extract ALL trending/hot search keywords.
-
-Return a JSON array where each item has:
-- "rank": the position/rank number (integer, starting from 1)
-- "keyword_es": the keyword in Spanish exactly as shown
-- "keyword_zh": the Simplified Chinese translation of the Spanish keyword
-- "url": if there's a link to the keyword detail page, include it (full URL or relative path). Otherwise null.
-
-IMPORTANT: Extract ALL keywords you can find. Look for numbered lists, trending terms, popular searches, etc.
-If you cannot determine the exact rank, assign sequential numbers starting from 1.
-Return ONLY valid JSON.
-
-Markdown content:
-${markdown.slice(0, 15000)}`;
-
-    const extracted = await callGeminiJson(extractPrompt);
-    const rawKeywords = Array.isArray(extracted)
-      ? extracted as { rank: number; keyword_es: string; keyword_zh?: string | null; url?: string | null }[]
-      : ((extracted as { keywords?: { rank: number; keyword_es: string; keyword_zh?: string | null; url?: string | null }[]; data?: { rank: number; keyword_es: string; keyword_zh?: string | null; url?: string | null }[] }).keywords
-          || (extracted as { data?: { rank: number; keyword_es: string; keyword_zh?: string | null; url?: string | null }[] }).data
-          || []);
+    console.log("Extracting keywords with regex ...");
+    const rawKeywords = extractKeywordsFromMarkdown(markdown);
 
     if (rawKeywords.length === 0) {
       return new Response(JSON.stringify({ error: "No keywords found on the page", markdown_preview: markdown.slice(0, 500) }), {
@@ -205,7 +169,11 @@ ${markdown.slice(0, 15000)}`;
 
     console.log(`Extracted ${rawKeywords.length} keywords`);
 
-    const keywordsWithCounts: Array<{ rank: number; keyword_es: string; keyword_zh?: string | null; url?: string | null; product_count?: number | null }> = [];
+    // Translate keywords to Chinese (best-effort, non-blocking)
+    console.log("Translating keywords ...");
+    const chineseTranslations = await translateKeywords(rawKeywords.map(k => k.keyword_es));
+
+    const keywordsWithCounts: Array<{ rank: number; keyword_es: string; keyword_zh: string | null; url: string | null; product_count: number | null; product_images: string[] }> = [];
     const detailLimit = Math.min(rawKeywords.length, 10);
 
     for (let i = 0; i < rawKeywords.length; i++) {
@@ -254,7 +222,14 @@ ${markdown.slice(0, 15000)}`;
         }
       }
 
-      keywordsWithCounts.push({ ...kw, product_count: productCount });
+      keywordsWithCounts.push({
+        rank: kw.rank,
+        keyword_es: kw.keyword_es,
+        keyword_zh: chineseTranslations[i]?.trim() || null,
+        url: kw.url,
+        product_count: productCount,
+        product_images: kw.images || [],
+      });
     }
 
     console.log("Calculating metrics ...");
@@ -282,7 +257,7 @@ ${markdown.slice(0, 15000)}`;
       return {
         rank: kw.rank || idx + 1,
         keyword_es: kw.keyword_es,
-          keyword_zh: kw.keyword_zh?.trim() || null,
+        keyword_zh: kw.keyword_zh,
         product_count: productCount,
         supply_demand_ratio: supplyDemandRatio,
         avg_price: avgPrice,
@@ -290,7 +265,7 @@ ${markdown.slice(0, 15000)}`;
         revenue,
         conversion_rate: conversionRate,
         trend_data: trendData,
-        product_images: [],
+        product_images: kw.product_images || [],
         updated_at: new Date().toISOString(),
       };
     });
@@ -313,12 +288,6 @@ ${markdown.slice(0, 15000)}`;
     });
   } catch (error) {
     console.error("Sync error:", error);
-    if (error instanceof HttpError) {
-      return new Response(JSON.stringify({ error: error.message }), {
-        status: error.status,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
     return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
