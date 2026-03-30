@@ -178,19 +178,43 @@ const KeywordsPage = () => {
   };
 
   const sortedKeywords = useMemo(() => {
-    const filtered = searchTerm
-      ? keywords.filter(k =>
-          k.keyword_es.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (k.keyword_zh && k.keyword_zh.includes(searchTerm))
-        )
-      : keywords;
+    let filtered = keywords;
+
+    // Text search
+    if (searchTerm) {
+      filtered = filtered.filter(k =>
+        k.keyword_es.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (k.keyword_zh && k.keyword_zh.includes(searchTerm))
+      );
+    }
+
+    // Advanced filters
+    const numFilter = (val: number | null, min: string, max: string) => {
+      if (min && val != null && val < Number(min)) return false;
+      if (max && val != null && val > Number(max)) return false;
+      if (min && val == null) return false;
+      return true;
+    };
+
+    if (salesMin || salesMax) filtered = filtered.filter(k => numFilter(k.revenue != null ? Number(k.revenue) : null, salesMin, salesMax));
+    if (competitorMin || competitorMax) filtered = filtered.filter(k => numFilter(k.product_count, competitorMin, competitorMax));
+    if (reviewMin || reviewMax) filtered = filtered.filter(k => numFilter(k.sales_30d, reviewMin, reviewMax));
+    if (ratingMin || ratingMax) filtered = filtered.filter(k => numFilter(k.conversion_rate != null ? Number(k.conversion_rate) : null, ratingMin, ratingMax));
+    if (tagKeyword) {
+      const tag = tagKeyword.toLowerCase();
+      filtered = filtered.filter(k =>
+        tagMatchType === "精准"
+          ? k.keyword_es.toLowerCase() === tag || (k.keyword_zh && k.keyword_zh === tagKeyword)
+          : k.keyword_es.toLowerCase().includes(tag) || (k.keyword_zh && k.keyword_zh.includes(tagKeyword))
+      );
+    }
 
     return [...filtered].sort((a, b) => {
       const av = a[sortField] ?? 0;
       const bv = b[sortField] ?? 0;
       return sortDir === "asc" ? (av as number) - (bv as number) : (bv as number) - (av as number);
     });
-  }, [keywords, searchTerm, sortField, sortDir]);
+  }, [keywords, searchTerm, sortField, sortDir, salesMin, salesMax, competitorMin, competitorMax, reviewMin, reviewMax, ratingMin, ratingMax, tagKeyword, tagMatchType]);
 
   const SortIcon = ({ field }: { field: SortField }) => {
     if (sortField !== field) return <ArrowUpDown className="w-3 h-3 opacity-40" />;
