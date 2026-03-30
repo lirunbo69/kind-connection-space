@@ -1,0 +1,1 @@
+ALTER TABLE public.ml_hot_keywords ADD COLUMN IF NOT EXISTS keyword_monthly_stats jsonb DEFAULT '[]'::jsonb;

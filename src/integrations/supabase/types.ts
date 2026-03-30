@@ -180,6 +180,7 @@ export type Database = {
           created_at: string | null
           id: string
           keyword_es: string
+          keyword_monthly_stats: Json | null
           keyword_zh: string | null
           product_count: number | null
           product_images: Json | null
@@ -197,6 +198,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           keyword_es: string
+          keyword_monthly_stats?: Json | null
           keyword_zh?: string | null
           product_count?: number | null
           product_images?: Json | null
@@ -214,6 +216,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           keyword_es?: string
+          keyword_monthly_stats?: Json | null
           keyword_zh?: string | null
           product_count?: number | null
           product_images?: Json | null
